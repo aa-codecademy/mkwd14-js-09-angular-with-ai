@@ -1,0 +1,15 @@
+<h2>Product list</h2>
+@if (!products.length) {
+  <p>No products found.</p>
+} @else {
+  <ul>
+    @for (product of products; track product.id) {
+      <li [class.out-of-stock]="!product.inStock">
+        {{ product.name }} - {{ product.price | currency }}
+        @if (!product.inStock) {
+          <span>(Out of stock)</span>
+        }
+      </li>
+    }
+  </ul>
+}
