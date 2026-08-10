@@ -1,0 +1,10 @@
+<header>
+  <nav>
+    <ul>
+      <li *ngFor="let link of navLinks">
+        {{ link }}
+      </li>
+    </ul>
+  </nav>
+  <div *ngIf="isLoggedIn">User: John Doe</div>
+</header>
