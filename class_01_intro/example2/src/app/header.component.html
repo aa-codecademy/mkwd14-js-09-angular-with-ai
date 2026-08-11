@@ -1,10 +1,16 @@
 <header>
   <nav>
     <ul>
+      <!--
+        *ngFor is the classic structural directive for lists (the modern
+        equivalent is the @for block). The leading * tells Angular this
+        directive rewrites the DOM structure, not just its attributes.
+      -->
       <li *ngFor="let link of navLinks">
         {{ link }}
       </li>
     </ul>
   </nav>
+  <!-- *ngIf removes/adds this element from the DOM entirely based on the boolean -->
   <div *ngIf="isLoggedIn">User: John Doe</div>
 </header>
