@@ -6,7 +6,7 @@ import { HighlightDirective } from './highlight.directive';
   imports: [HighlightDirective],
   template: `
     <h2>Highlight Directive</h2>
-    <p appHighlight>Hover over me (default: yellow)</p>
+    <p appHighlight="yellow">Hover over me (default: yellow)</p>
     <p appHighlight="green">Hover over me for green bg</p>
     <p appHighlight="red">Hover over me for red bg</p>
     <p appHighlight="blue">Hover over me for blue bg</p>

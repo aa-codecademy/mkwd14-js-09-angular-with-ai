@@ -1,0 +1,11 @@
+<mat-card appearance="outlined">
+  <ng-content select="[slot=header]" />
+
+  <mat-card-content>
+    <ng-content select="[slot=body]" />
+  </mat-card-content>
+
+  <mat-card-actions>
+    <ng-content select="[slot=actions]" />
+  </mat-card-actions>
+</mat-card>
