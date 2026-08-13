@@ -8,11 +8,14 @@ import { FooterComponent } from "./shared/components/footer/footer.component";
 
 @Component({
   selector: 'app-root',
+  // templateUrl/styleUrl point to separate .html/.css files instead of inlining them in the decorator -
+  // preferred once a template grows beyond a few lines, so the class file stays readable.
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   imports: [NavbarComponent, CardShellComponent, MatButtonModule, JsonPipe, FooterComponent],
 })
 export class AppComponent {
+  // Typed against the Product interface - TypeScript will flag any object here missing a required field.
   products: Product[] = [
     {
       id: 1,

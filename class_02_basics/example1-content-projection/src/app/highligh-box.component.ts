@@ -4,6 +4,8 @@ import { Component } from '@angular/core';
   selector: 'app-highlight-component',
   template: `
     <div class="box">
+      <!-- ng-content is Angular's version of a "slot" - it renders whatever the parent -->
+      <!-- placed between <app-highlight-component> ... </app-highlight-component> tags. -->
       <ng-content />
     </div>
   `,

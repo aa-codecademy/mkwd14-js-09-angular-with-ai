@@ -17,6 +17,7 @@ import { TruncatePipe } from './truncate.pipe';
       <tr>
         <td>currency</td>
         <td>{{ price }}</td>
+        <!-- Pipe arguments after the colon are positional: currency code, display format, digit info -->
         <td>{{ price | currency: 'EUR' : 'symbol' : '1.2-2' }}</td>
       </tr>
       <tr>
@@ -52,9 +53,12 @@ import { TruncatePipe } from './truncate.pipe';
     </table>
 
     <h2>Custom Truncate Pipe</h2>
+    <!-- track product.id gives Angular a stable identity per item so it can efficiently reuse DOM nodes -->
+    <!-- instead of re-rendering the whole list when it re-checks bindings. -->
     @for (product of products; track product.id) {
       <div>
         <strong>{{ product.name }}</strong>
+        <!-- Same custom pipe, called with different arguments each time - pipes are just functions with sugar. -->
         <p>Default (80 chars): {{ product.description | truncate }}</p>
         <p>Custom (50 chars): {{ product.description | truncate: 50 }}</p>
         <p>Custom (40 chars): {{ product.description | truncate: 40 : ' [read more]' }}</p>

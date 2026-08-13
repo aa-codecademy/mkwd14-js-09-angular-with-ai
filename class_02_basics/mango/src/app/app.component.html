@@ -1,6 +1,9 @@
+<!-- Self-closing custom element tags - Angular components with no content of their own can be written this way. -->
 <app-navbar />
 
 <main>
+  <!-- slot="header" is just a plain attribute here, matched by <ng-content select="[slot=header]" /> -->
+  <!-- inside CardShellComponent's template - same multi-slot projection pattern as the earlier example. -->
   <app-card-shell>
     <div slot="header">
       <h1>Welcome to Mango</h1>
@@ -21,6 +24,8 @@
   </div>
 
   <div>
+    <!-- Commented-out debug output - the json pipe is handy for quickly inspecting an object/array -->
+    <!-- while developing, without writing console.log calls. -->
     <!-- <pre>
       {{ products | json }}
     </pre> -->
