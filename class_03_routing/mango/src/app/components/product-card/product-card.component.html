@@ -1,0 +1,32 @@
+<mat-card appearance="outlined">
+  <!-- [src]/[alt] are property bindings - values come from the component, not literal strings. -->
+  <img mat-card-image [src]="product().image" [alt]="product().name" />
+  <mat-card-content>
+    <!-- {{ }} interpolation - inserts a computed value as text. product() is a function call because -->
+    <!-- `product` is a signal input; calling it reads the current value. -->
+    <h3>{{ product().name }}</h3>
+    <p>{{ product().description }}</p>
+    <div>
+      <!-- The `currency` pipe formats the raw number as EUR currency text. -->
+      {{ product().price | currency: 'EUR' }}
+    </div>
+    <div>
+      <!-- @if is the new control-flow syntax replacing *ngIf - conditionally renders this block. -->
+      @if (product().stock <= 0) {
+        <span>Out of Stock</span>
+      }
+    </div>
+  </mat-card-content>
+  <mat-card-actions>
+    <!-- (click) is event binding - calls the component method when the button is clicked. -->
+    <button
+      mat-flat-button
+      color="primary"
+      [disabled]="product().stock <= 0"
+      (click)="addToCart(product().id)"
+    >
+      <mat-icon>shopping_cart</mat-icon>
+      Add to card
+    </button>
+  </mat-card-actions>
+</mat-card>

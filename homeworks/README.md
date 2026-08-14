@@ -9,6 +9,7 @@ Each homework builds on everything taught in class up to that point — check th
 | # | Topic | Based on | Link |
 |---|---|---|---|
 | 1 | Nestly — an Airbnb-style listings page | Class 1 (components, bindings, control flow, pipes) + Class 2 (content projection, directives, custom pipes) | [hmw_1.md](./hmw_1.md) |
+| 2 | Nestly gets multiple pages — adding routing | Class 3 (routing, lazy loading, services) — builds on Homework 1 | [hmw_2.md](./hmw_2.md) |
 
 ## How to submit
 

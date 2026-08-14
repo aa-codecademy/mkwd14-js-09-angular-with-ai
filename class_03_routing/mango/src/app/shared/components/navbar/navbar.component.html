@@ -1,0 +1,19 @@
+<mat-toolbar color="primary">
+  <mat-icon>spa</mat-icon>
+  <a routerLink="/">Mango</a>
+  <div style="display: flex; gap: 5px; margin-left: 5px">
+    <a routerLink="/products">Products ({{ productCount }})</a>
+    <a routerLink="/admin">Admin</a>
+    <a routerLink="/login">Login</a>
+  </div>
+  <!-- An empty span used purely for flexbox spacing (pushes the search box and cart to the right) -->
+  <!-- a common Material toolbar trick, styled via the "spacer" class in navbar.component.css. -->
+  <span class="spacer"></span>
+  <input type="text" placeholder="Search products..." class="input" />
+  <!-- matBadge overlays a small counter badge on the button - handy for cart item counts, notifications, etc. -->
+  <a routerLink="/products">
+    <button mat-icon-button matBadge="2" matBadgeColor="accent" aria-label="Cart">
+      <mat-icon>shopping_cart</mat-icon>
+    </button>
+  </a>
+</mat-toolbar>
