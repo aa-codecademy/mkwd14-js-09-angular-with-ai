@@ -1,0 +1,23 @@
+.product-list-page {
+  padding-top: 24px;
+  padding-bottom: 48px;
+}
+
+.search-field {
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 16px;
+}
+
+.results-count {
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.product-link {
+  text-decoration: none;
+}
+
+.empty-state-full-width {
+  grid-column: 1/-1;
+}

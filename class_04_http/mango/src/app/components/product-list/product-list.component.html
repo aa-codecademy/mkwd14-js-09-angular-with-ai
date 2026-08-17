@@ -1,0 +1,25 @@
+<!-- <button (click)="addRandomProduct()">Add random product</button>
+
+<div>
+  <h2>Products ({{ products.length }})</h2>
+</div> -->
+
+<div class="container product-list-page">
+  <div class="page-header">
+    <h1>All Products</h1>
+  </div>
+
+  <div class="products-grid">
+    <!-- @for is the new control-flow syntax replacing *ngFor - `track product.id` tells Angular how to -->
+    <!-- identify each item across re-renders so it can reuse/reorder existing DOM instead of rebuilding it. -->
+    <!-- [product]="product" is property binding, passing data down into the input.required<Product>() above. -->
+    @for (product of products; track product.id) {
+      <app-product-card [product]="product" />
+    } @empty {
+      <!-- @empty renders only when the iterable is empty - no need for a separate *ngIf check. -->
+      <div class="empty-state empty-state-full-width">
+        <p>No products founds.</p>
+      </div>
+    }
+  </div>
+</div>
