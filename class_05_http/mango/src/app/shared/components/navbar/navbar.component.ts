@@ -3,7 +3,7 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ProductService } from '../../services/product.service';
 import { CartService } from '../../services/cart.service';
 
@@ -13,7 +13,7 @@ import { CartService } from '../../services/cart.service';
   selector: 'app-navbar',
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.css',
-  imports: [MatToolbarModule, MatIconModule, MatButtonModule, MatBadgeModule, RouterLink],
+  imports: [MatToolbarModule, MatIconModule, MatButtonModule, MatBadgeModule, RouterLink, RouterLinkActive],
 })
 export class NavbarComponent {
   // Same ProductService singleton injected in ProductListComponent - because it's providedIn: 'root',

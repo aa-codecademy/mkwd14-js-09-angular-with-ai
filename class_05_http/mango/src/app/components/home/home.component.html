@@ -1,16 +1,19 @@
-<!-- slot="header" is just a plain attribute here, matched by <ng-content select="[slot=header]" /> -->
-<!-- inside CardShellComponent's template - same multi-slot projection pattern as the earlier example. -->
-<app-card-shell>
-  <div slot="header">
-    <h1>Welcome to Mango</h1>
-    <p>Discover amazing tech product at great prices.</p>
+<section class="hero-section">
+  <h1 class="hero-title">Welcome to Mango 🥭</h1>
+  <p class="hero-subtitle">Premium tech products unbeatable prices.</p>
+  <a mat-raised-button color="accent" routerLink="/products">Shop Now</a>
+</section>
+
+<section class="container featured-section">
+  <h2>Featured Products</h2>
+
+  <div class="products-grid">
+    @for (product of featuredProducts(); track product.id) {
+      <app-product-card [product]="product" />
+    }
   </div>
 
-  <div slot="body">
-    <p>Free shipping on order over €100. New products added weekly.</p>
+  <div class="view-all-wrapper">
+    <a mat-stroked-button color="primary" routerLink="/products">View All Products</a>
   </div>
-
-  <div slot="actions">
-    <button mat-flat-button color="primary">Shop Sale Items</button>
-  </div>
-</app-card-shell>
+</section>

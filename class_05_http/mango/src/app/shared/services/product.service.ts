@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import type { Product } from '../../core/models/product.model';
 import { BehaviorSubject, type Observable } from 'rxjs';
 import { API_URL } from '../../tokens/api-url.token';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 
 // providedIn: 'root' registers this service with Angular's dependency injection system as a single,
 // app-wide singleton - every component that `inject()`s it shares the exact same instance and data.
@@ -13,6 +13,11 @@ export class ProductService {
 
   getAll(): Observable<Product[]> {
     return this.httpClient.get<Product[]>(`${this.apiUrl}/products`);
+  }
+
+  getFeatured(): Observable<Product[]> {
+    const params = new HttpParams().set('featured', true);
+    return this.httpClient.get<Product[]>(`${this.apiUrl}/products`, { params });
   }
 
   getById(id: number): Observable<Product> {

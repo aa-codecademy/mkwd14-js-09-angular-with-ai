@@ -1,0 +1,44 @@
+.hero-section {
+  background: linear-gradient(135deg, #e64a19 0%, #ff8a65 100%);
+  color: white;
+  padding: 80px 16px;
+  text-align: center;
+}
+
+.hero-title {
+  font-size: 3rem;
+  font-weight: 300;
+  margin-bottom: 16px;
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto 32px;
+}
+
+.featured-section {
+  padding-top: 48px;
+  padding-bottom: 48px;
+}
+
+.section-title {
+  font-size: 1.8rem;
+  font-weight: 400;
+  margin-bottom: 24px;
+}
+
+.error-hint {
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+.loading-text {
+  color: #999;
+}
+
+.view-all-wrapper {
+  text-align: center;
+  margin-top: 32px;
+}
