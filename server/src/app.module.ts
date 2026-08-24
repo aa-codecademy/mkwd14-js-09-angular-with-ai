@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { AuthModule } from './auth/auth.module';
+import { SeedModule } from './seed/seed.module';
 import { Category } from './categories/category.entity';
 import { Product } from './products/product.entity';
 import { User } from './auth/entities/user.entity';
@@ -30,6 +31,7 @@ import { User } from './auth/entities/user.entity';
     CategoriesModule,
     ProductsModule,
     AuthModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],

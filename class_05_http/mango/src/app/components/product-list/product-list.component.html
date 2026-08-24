@@ -1,0 +1,15 @@
+<div class="container product-list-page">
+  <div class="page-header">
+    <h1>All Products</h1>
+  </div>
+
+  <div class="products-grid">
+    @for (product of products(); track product.id) {
+      <app-product-card [product]="product" />
+    } @empty {
+      <div class="empty-state empty-state-full-width">
+        <p>No products founds.</p>
+      </div>
+    }
+  </div>
+</div>

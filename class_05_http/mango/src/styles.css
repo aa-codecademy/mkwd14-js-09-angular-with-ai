@@ -1,0 +1,61 @@
+/* You can add global styles to this file, and also import other style files */
+.spacer {
+  flex: 1 1 auto;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px 16px;
+  color: #999;
+}
+
+.out-of-stock-badge {
+  background: #f44336;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.in-stock-badge {
+  background: #4caf50;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.sale-price {
+  color: #e64a19;
+  font-weight: 500;
+}
+
+.sale-price-size {
+  font-size: 1.1rem;
+}
+
+.original-price {
+  text-decoration: line-through;
+  color: #999;
+  font-size: 0.85em;
+  margin-left: 4px;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+  padding: 20px 0;
+}
