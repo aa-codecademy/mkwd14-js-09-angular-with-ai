@@ -21,6 +21,20 @@
     <div>Filtering by "{{ searchQuery() }}"</div>
   }
 
+  <mat-chip-listbox>
+    <mat-chip-option [selected]="!activeCategoryId()" (click)="activeCategoryId.set(null)"
+      >All</mat-chip-option
+    >
+    @for (category of categories(); track category.id) {
+      <mat-chip-option
+        [selected]="category.id === activeCategoryId()"
+        (click)="activeCategoryId.set(category.id)"
+      >
+        {{ category.name }}
+      </mat-chip-option>
+    }
+  </mat-chip-listbox>
+
   <div class="products-grid">
     @for (product of products(); track product.id) {
       <app-product-card [product]="product" />

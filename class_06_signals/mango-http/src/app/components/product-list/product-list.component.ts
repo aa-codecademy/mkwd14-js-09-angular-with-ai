@@ -26,6 +26,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { CategoryService } from '../../shared/services/category.service';
+import { Category } from '../../core/models/category.model';
+import { MatChipsModule } from '@angular/material/chips';
 
 @Component({
   selector: 'app-product-list',
@@ -37,6 +40,7 @@ import { MatButtonModule } from '@angular/material/button';
     FormsModule,
     MatInputModule,
     MatButtonModule,
+    MatChipsModule,
   ],
   templateUrl: './product-list.component.html',
   styleUrl: './product-list.component.css',
@@ -45,8 +49,13 @@ import { MatButtonModule } from '@angular/material/button';
 // each ngOnX method below matches Angular's expected signature - this is the router's 'products' page.
 export class ProductListComponent implements OnInit, OnDestroy {
   private productService = inject(ProductService);
+  private categoryService = inject(CategoryService);
+
   products = signal<Product[]>([]);
   searchQuery = signal('');
+
+  categories = signal<Category[]>([]);
+  activeCategoryId = signal<number | null>(null);
 
   subscription: Subscription = new Subscription();
 
@@ -67,6 +76,10 @@ export class ProductListComponent implements OnInit, OnDestroy {
       });
 
     this.searchTerms.next('');
+
+    this.categoryService.getAll().subscribe((categories) => {
+      this.categories.set(categories);
+    });
   }
 
   onSearch(searchTerm: string) {

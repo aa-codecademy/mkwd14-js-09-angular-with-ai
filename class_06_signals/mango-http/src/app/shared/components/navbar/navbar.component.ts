@@ -6,6 +6,8 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ProductService } from '../../services/product.service';
 import { CartService } from '../../services/cart.service';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { LoadingService } from '../../services/loading.service';
 
 // Each MatXModule below unlocks one specific Material directive/component used in the template -
 // Angular Material is modular, so you only import what you actually use (toolbar, icon, button, badge).
@@ -13,13 +15,22 @@ import { CartService } from '../../services/cart.service';
   selector: 'app-navbar',
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.css',
-  imports: [MatToolbarModule, MatIconModule, MatButtonModule, MatBadgeModule, RouterLink, RouterLinkActive],
+  imports: [
+    MatToolbarModule,
+    MatIconModule,
+    MatButtonModule,
+    MatBadgeModule,
+    RouterLink,
+    RouterLinkActive,
+    MatProgressBarModule,
+  ],
 })
 export class NavbarComponent {
   // Same ProductService singleton injected in ProductListComponent - because it's providedIn: 'root',
   // both components read/write the exact same underlying data, so the badge count stays in sync.
   private productService = inject(ProductService);
   cartService = inject(CartService);
+  loadingService = inject(LoadingService)
 
   cartCount = 3;
   productCount = 0;

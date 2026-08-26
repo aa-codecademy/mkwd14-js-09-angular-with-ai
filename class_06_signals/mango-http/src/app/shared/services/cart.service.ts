@@ -1,46 +1,61 @@
-import { Injectable } from '@angular/core';
+import { computed, effect, Injectable, signal } from '@angular/core';
 import type { CartItem } from '../../core/models/cart-item.model';
 import type { Product } from '../../core/models/product.model';
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
-  private _items: CartItem[] = [];
+  items = signal<CartItem[]>(this.#loadStoredItems());
 
-  get items(): CartItem[] {
-    return this._items;
-  }
+  itemsCount = computed(() => this.items().reduce((total, item) => total + item.quantity, 0));
 
-  get itemsCount(): number {
-    return this._items.length;
-  }
-
-  get total(): number {
-    return this._items.reduce((sum, item) => {
+  total = computed(() =>
+    this.items().reduce((sum, item) => {
       const price = item.product.price * (1 - item.product.discountPercent / 100);
       return sum + price * item.quantity;
-    }, 0);
+    }, 0),
+  );
+
+  constructor() {
+    effect(() => {
+      localStorage.setItem('cart', JSON.stringify(this.items()));
+    });
+  }
+
+  #loadStoredItems() {
+    try {
+      const raw = localStorage.getItem('cart');
+      if (!raw) {
+        return [];
+      }
+
+      return JSON.parse(raw);
+    } catch {
+      return [];
+    }
   }
 
   add(product: Product, quantity = 1) {
-    const existing = this.items.find((i) => i.product.id === product.id);
+    const existing = this.items().find((i) => i.product.id === product.id);
 
     if (existing) {
-      this._items = this.items.map((i) => {
-        if (i.product.id === product.id) {
-          return {
-            ...i,
-            quantity: i.quantity + 1,
-          };
-        }
-        return i;
-      });
+      this.items.update((items) =>
+        items.map((i) => {
+          if (i.product.id === product.id) {
+            return {
+              ...i,
+              quantity: i.quantity + 1,
+            };
+          }
+          return i;
+        }),
+      );
     } else {
-      this._items = [...this.items, { product, quantity }];
+      this.items.update((items) => [...items, { product, quantity }]);
     }
   }
 
   remove(productId: number) {
-    this._items = this.items.filter((i) => i.product.id !== productId);
+    this.items.update((items) => items.filter((i) => i.product.id !== productId));
   }
 
   updateQuantity(productId: number, quantity: number) {
@@ -49,18 +64,20 @@ export class CartService {
       return;
     }
 
-    this._items = this._items.map((i) => {
-      if (i.product.id === productId) {
-        return {
-          ...i,
-          quantity,
-        };
-      }
-      return i;
-    });
+    this.items.update((items) =>
+      items.map((i) => {
+        if (i.product.id === productId) {
+          return {
+            ...i,
+            quantity,
+          };
+        }
+        return i;
+      }),
+    );
   }
 
   clear() {
-    this._items = [];
+    this.items.set([]);
   }
 }

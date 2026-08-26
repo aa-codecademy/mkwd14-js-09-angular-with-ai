@@ -4,27 +4,27 @@
     <a routerLink="/" class="navbar-brand">Mango</a>
     <div style="display: flex; gap: 5px; margin-left: 5px">
       <a
-        routerLink="/home"
+        routerLink="/"
+        mat-button
         class="navbar-link"
         routerLinkActive="active-link"
         [routerLinkActiveOptions]="{ exact: true }"
         >Home</a
       >
-      <a routerLink="/products" class="navbar-link" routerLinkActive="active-link"
+      <a mat-button routerLink="/products" class="navbar-link" routerLinkActive="active-link"
         >Products ({{ productCount }})</a
       >
-      <a class="navbar-link" routerLink="/admin">Admin</a>
-      <a class="navbar-link" routerLink="/login">Login</a>
+      <a mat-button class="navbar-link" routerLink="/admin">Admin</a>
+      <a mat-button class="navbar-link" routerLink="/login">Login</a>
     </div>
     <!-- An empty span used purely for flexbox spacing (pushes the search box and cart to the right) -->
     <!-- a common Material toolbar trick, styled via the "spacer" class in navbar.component.css. -->
     <span class="spacer"></span>
-    <input type="text" placeholder="Search products..." class="input" />
     <!-- matBadge overlays a small counter badge on the button - handy for cart item counts, notifications, etc. -->
     <a routerLink="/cart">
       <button
         mat-icon-button
-        [matBadge]="cartService.itemsCount"
+        [matBadge]="cartService.itemsCount()"
         matBadgeColor="accent"
         aria-label="Cart"
       >
@@ -32,4 +32,7 @@
       </button>
     </a>
   </div>
+  @if (loadingService.isLoading()) {
+    <mat-progress-bar mode="indeterminate" class="navbar-progress" />
+  }
 </mat-toolbar>
