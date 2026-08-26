@@ -1,0 +1,13 @@
+<mat-card appearance="outlined">
+  <!-- Three separate projection slots, each matched by attribute selector - this is how a single -->
+  <!-- reusable "card shell" component can lay out completely different content passed in by its parent. -->
+  <ng-content select="[slot=header]" />
+
+  <mat-card-content>
+    <ng-content select="[slot=body]" />
+  </mat-card-content>
+
+  <mat-card-actions>
+    <ng-content select="[slot=actions]" />
+  </mat-card-actions>
+</mat-card>
