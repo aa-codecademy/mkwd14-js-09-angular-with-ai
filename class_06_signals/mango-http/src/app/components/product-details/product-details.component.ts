@@ -24,6 +24,10 @@ export class ProductDetails implements OnInit {
   productId = signal<number | null>(null);
 
   ngOnInit(): void {
+    // switchMap here (not mergeMap/concatMap) matters: if the route param changes again before the
+    // previous getById() call finishes, switchMap cancels the stale in-flight request instead of
+    // letting an old response overwrite a newer one - important when navigating quickly between
+    // /products/:id pages.
     this.route.paramMap
       .pipe(
         map((params) => Number(params.get('id'))),

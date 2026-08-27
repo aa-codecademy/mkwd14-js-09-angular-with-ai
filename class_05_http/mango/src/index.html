@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- This is the ONE real HTML page of the app - Angular boots into <app-root> below and swaps -->
+    <!-- everything inside it as you navigate; there's no full page reload between routes. -->
     <meta charset="utf-8" />
     <title>Mango</title>
     <base href="/" />
@@ -15,6 +17,8 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   </head>
   <body>
+    <!-- Angular replaces this custom element with AppComponent's rendered template at bootstrap time -->
+    <!-- (see main.ts) - the selector here must match `selector: 'app-root'` in app.component.ts. -->
     <app-root></app-root>
   </body>
 </html>

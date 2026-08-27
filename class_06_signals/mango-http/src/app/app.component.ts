@@ -18,6 +18,6 @@ import { LoadingOverlayComponent } from "./shared/components/loading-overlay/loa
   imports: [NavbarComponent, FooterComponent, RouterOutlet, LoadingOverlayComponent],
 })
 export class AppComponent {
-  // Typed against the Product interface - TypeScript will flag any object here missing a required field.
-
+  // Root shell only: it lays out navbar/loading-overlay/router-outlet/footer and holds no state
+  // of its own - all real data/signals live in the shared services and route components.
 }

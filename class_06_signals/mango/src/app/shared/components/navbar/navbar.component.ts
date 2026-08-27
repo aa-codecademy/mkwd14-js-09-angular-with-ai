@@ -21,6 +21,11 @@ export class NavbarComponent {
   private productService = inject(ProductService);
   cartService = inject(CartService);
 
+  // Plain (non-signal) fields on purpose, to contrast with the signal-based state used elsewhere
+  // in this class: cartCount is just a hardcoded number (never updates), and productCount is a plain
+  // number reassigned in ngOnInit below - since it's not a signal, Angular only notices the new value
+  // because *something else* triggers change detection (e.g. router navigation, an event), not because
+  // productCount itself is "reactive" the way a signal read in the template would be.
   cartCount = 3;
   productCount = 0;
 

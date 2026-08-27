@@ -18,9 +18,14 @@ import { ProductCardComponent } from "../product-card/product-card.component";
 export class HomeComponent implements OnInit {
   private productService = inject(ProductService);
 
+  // signal() holds reactive state - templates that read featuredProducts() automatically re-render
+  // when .set() is called, without needing Zone.js change detection to guess that something changed.
   featuredProducts = signal<Product[]>([]);
 
   ngOnInit(): void {
+    // No unsubscribe/ngOnDestroy here: this Observable emits once and completes (a typical HTTP
+    // response), so there's nothing left running to leak - unlike a subscription to a stream that
+    // keeps emitting (e.g. a WebSocket or interval), which would need explicit cleanup.
     this.productService.getFeatured().subscribe((featuredProducts) => {
       this.featuredProducts.set(featuredProducts);
     });

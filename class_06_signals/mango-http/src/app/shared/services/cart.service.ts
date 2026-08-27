@@ -2,8 +2,14 @@ import { computed, effect, Injectable, signal } from '@angular/core';
 import type { CartItem } from '../../core/models/cart-item.model';
 import type { Product } from '../../core/models/product.model';
 
+// Signals replace the class_05 BehaviorSubject-based cart state: `items` is the single source of
+// truth, and itemsCount/total are computed() signals derived from it. computed() only
+// recalculates when a signal it reads actually changes, and caches the result otherwise - so
+// prefer computed() over a plain method for derived values instead of recalculating on every read.
 @Injectable({ providedIn: 'root' })
 export class CartService {
+  // Gotcha: signals are read by CALLING them as functions - `items()`, not `items`. Forgetting
+  // the parentheses gives you the WritableSignal object itself, not its current value.
   items = signal<CartItem[]>(this.#loadStoredItems());
 
   itemsCount = computed(() => this.items().reduce((total, item) => total + item.quantity, 0));
@@ -16,6 +22,9 @@ export class CartService {
   );
 
   constructor() {
+    // effect() re-runs whenever any signal it reads changes - here it's used as a side effect
+    // (persisting to localStorage), not to compute a value. That's the key distinction from
+    // computed(): use computed() for derived VALUES, effect() for side effects like this.
     effect(() => {
       localStorage.setItem('cart', JSON.stringify(this.items()));
     });

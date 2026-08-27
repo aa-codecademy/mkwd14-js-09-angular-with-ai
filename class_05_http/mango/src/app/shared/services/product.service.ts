@@ -11,6 +11,11 @@ export class ProductService {
   private httpClient = inject(HttpClient);
   private apiUrl = inject(API_URL);
 
+  // HttpClient.get returns a cold Observable, not a Promise: unlike fetch()/axios, the HTTP request
+  // isn't sent until something actually calls .subscribe() (or the template uses `| async`), and each
+  // separate subscription triggers its own separate HTTP call. Gotcha: subscribing without ever
+  // unsubscribing (e.g. from a component that gets destroyed) can leak - use the async pipe or
+  // takeUntilDestroyed() where possible instead of manual subscribe/unsubscribe bookkeeping.
   getAll(): Observable<Product[]> {
     return this.httpClient.get<Product[]>(`${this.apiUrl}/products`);
   }
@@ -24,6 +29,8 @@ export class ProductService {
     return this.httpClient.get<Product>(`${this.apiUrl}/products/${id}`);
   }
 
+  // Stubbed for this lesson - a real implementation would call httpClient.post<Product>(...) here,
+  // which also returns an Observable that must be subscribed to before the POST actually fires.
   addProduct(product: Product) {
     console.log(product);
   }

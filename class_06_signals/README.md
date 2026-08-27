@@ -1,16 +1,16 @@
-# Class 4 — HTTP Client & Services in Angular
+# Class 6 — Angular Signals
 
-In this class you'll connect your Angular apps to the outside world. You'll learn how `HttpClient` lets you fetch data from a real API, why that call returns an `Observable` instead of a plain value, and how to wrap that logic in an injectable `service` so components stay focused on displaying data rather than fetching it. You'll also see how to give HTTP responses proper TypeScript types so the compiler catches mistakes for you. Three projects back this class: `example1` shows a raw `HttpClient` call straight from a component with the `async` pipe, `example2` moves that same call into a dedicated `PostService` using signals, and `mango` puts everything together into a small shopping-cart app where services (`ProductService`, `CartService`) hold shared state that multiple components (navbar, product list, cart) all read from.
+Welcome! In this class you'll learn Angular's newest reactivity primitive: **Signals**. Signals give you a way to hold state that Angular can track automatically — no `async` pipe, no manual subscribe/unsubscribe, no `BehaviorSubject` boilerplate for simple cases. Three projects back this class: `example` is a small, self-contained playground for `signal()`, `computed()`, and `effect()` with no HTTP involved; `mango` takes the shopping-cart app from earlier classes and refactors *some* of its state to signals while deliberately leaving other pieces (like `CartService`) as plain fields, so you can compare the two styles side by side; `mango-http` goes further, combining signals with a functional HTTP interceptor that tracks a shared loading state across every request.
 
 ## Table of Contents
 
 - [Core Concepts covered in this class](#core-concepts-covered-in-this-class)
-  - [HttpClient & provideHttpClient](#httpclient--providehttpclient)
-  - [Observables & subscribe](#observables--subscribe)
-  - [Services & Dependency Injection](#services--dependency-injection)
-  - [Typing HTTP Responses](#typing-http-responses)
-  - [Structuring a Feature: Services + Components](#structuring-a-feature-services--components)
-  - [RxJS Operators: map & pipe](#rxjs-operators-map--pipe)
+  - [signal() — reactive state](#signal--reactive-state)
+  - [computed() — derived state](#computed--derived-state)
+  - [effect() — side effects](#effect--side-effects)
+  - [Signals vs. plain fields and RxJS](#signals-vs-plain-fields-and-rxjs)
+  - [Signal-based input()](#signal-based-input)
+  - [Functional HTTP interceptors](#functional-http-interceptors)
 - [Theory](#theory)
 - [Useful Links](#useful-links)
 - [Mini Examples](#mini-examples)
@@ -18,209 +18,159 @@ In this class you'll connect your Angular apps to the outside world. You'll lear
 
 ## Core Concepts covered in this class
 
-### HttpClient & provideHttpClient
+### signal() — reactive state
 
-`HttpClient` is Angular's built-in service for making HTTP requests (GET, POST, PUT, DELETE, ...). It's injectable like any other service, but it only works once `provideHttpClient()` has been added to your app's providers.
+A signal is a wrapper around a value that Angular can track. You create one with `signal(initialValue)`, read it by **calling it as a function**, and change it with `.set()` or `.update()` — never by reassigning it directly.
 
-**Why it exists:** you could use the browser's native `fetch()`, but `HttpClient` gives you automatic JSON parsing, generics for response typing, built-in support for interceptors (auth headers, logging), and — most importantly for this class — it returns RxJS `Observable`s instead of `Promise`s, unlocking operators like `map`, `retry`, and `debounceTime`.
+**Why it exists:** before signals, tracking "did this value change?" relied on Angular's zone-based change detection (checking the whole component tree) or manual RxJS subscriptions. Signals let Angular know *exactly* which pieces of state changed and re-render only what depends on them — simpler code, better performance.
 
 ```typescript
-// app.config.ts
-import { ApplicationConfig } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
-
-export const appConfig: ApplicationConfig = {
-  providers: [provideHttpClient()],
-};
+const count = signal(0);
+count();          // read — note the parentheses!
+count.set(5);      // replace
+count.update(v => v + 1); // derive the new value from the old one
 ```
 
-> **Note:** both `example1` and `example2` in this class inject `HttpClient` but are **missing** `provideHttpClient()` in their `app.config.ts`. This is a deliberate gotcha to spot — without it, Angular's injector has no provider for `HttpClient`, and injecting it throws a `NullInjectorError` at runtime. Fixing it is exercise #1 below.
+> **Gotcha:** `count` (without parentheses) is the signal object, not its value. Forgetting the `()` is the single most common signals mistake — you'll see it called out throughout this class's code.
 
-### Observables & subscribe
+### computed() — derived state
 
-`HttpClient.get<T>(url)` doesn't fetch anything by itself — it returns a "cold" `Observable<T>` that stays completely inert until something calls `.subscribe()` on it (or a template uses the `async` pipe, which subscribes for you).
+`computed()` creates a **read-only** signal whose value is calculated from other signals. It automatically tracks whichever signals you read inside its callback — no dependency array required.
 
-**Why it exists:** Observables let you compose behavior around a stream of values *before* anything actually runs — you can `pipe()` in transformations, retries, or cancellation logic, and nothing executes until a subscriber shows up. This also means the same Observable can be subscribed to multiple times, re-triggering the request each time.
+**Why it exists:** a plain getter recalculates every single time it's accessed, even if nothing changed. `computed()` memoizes its result and only recomputes when one of its actual dependencies changes, which matters once the calculation gets expensive or is read many times per render.
 
 ```typescript
-this.http.get<Post[]>('/api/posts').subscribe({
-  next: (posts) => console.log(posts),
-  error: (err) => console.error('Request failed', err),
+const price = signal(10);
+const quantity = signal(3);
+const total = computed(() => price() * quantity()); // recomputes only when price or quantity change
+```
+
+### effect() — side effects
+
+`effect()` runs a function whenever any signal it reads changes — used for things that live *outside* the component's rendered output, like writing to `localStorage` or logging.
+
+**Why it exists:** `computed()` is for producing a value you'll read elsewhere; `effect()` is for reacting to a change by *doing* something. Mixing the two up (using `computed()` for side effects) is a common source of confusing bugs, since Angular expects `computed()` callbacks to be pure.
+
+```typescript
+effect(() => {
+  localStorage.setItem('cart', JSON.stringify(cartItems()));
 });
 ```
 
-> **Gotcha:** logging the Observable itself right after calling `.get()` (without subscribing) will never show you the actual data — the request hasn't fired yet. This exact trap is baked into `example1` and `example2`'s `ngOnInit` — check the console output order for yourself.
+> **Note:** effects registered inside a component are automatically cleaned up when that component is destroyed — you don't need to manage that yourself, unlike an RxJS subscription.
 
-### Services & Dependency Injection
+### Signals vs. plain fields and RxJS
 
-A service is a plain class decorated with `@Injectable({ providedIn: 'root' })`. Angular's dependency injection (DI) system then hands out one shared singleton instance to every component that asks for it — either via a constructor parameter or the newer `inject()` function.
+Not everything in these projects uses signals — `mango`'s `CartService` intentionally keeps a plain field with getters, and services that call `HttpClient` still return RxJS `Observable`s (HTTP itself isn't signal-based). Components bridge the two worlds by subscribing once and writing the result into a signal: `this.service.getData().subscribe(data => this.data.set(data))`.
 
-**Why it exists:** components should render UI and react to user input, not own business logic or duplicate HTTP calls. Centralizing that logic in a service means multiple components can share the same data and the same in-flight request, and it makes the logic trivially unit-testable in isolation from any component.
+**Why it exists / mental model:** signals solve *synchronous, in-memory* reactive state really well, but they don't replace RxJS for async streams, cancellation, or operators like `debounceTime` and `switchMap` — you'll see both used together, not one replacing the other.
 
-```typescript
-@Injectable({ providedIn: 'root' })
-export class PostService {
-  private http = inject(HttpClient); // functional DI - no constructor needed
+> **Gotcha:** `[(ngModel)]` two-way binding assumes a plain mutable property. Bound directly to a `WritableSignal`, it overwrites the signal itself with a raw value on change, breaking every future call to it as a function. Use `[ngModel]="mySignal()"` + `(ngModelChange)="mySignal.set($event)"` instead.
 
-  getPosts() {
-    return this.http.get<Post[]>('/api/posts');
-  }
-}
-```
+### Signal-based input()
+
+Angular now offers `input()` and `input.required()` as a signal-based alternative to the `@Input()` decorator — a component's inputs become signals you read with `()`, just like state you create yourself.
 
 ```typescript
-export class MyComponent {
-  private postService = inject(PostService); // same singleton everywhere
-}
+product = input.required<Product>();
+// template: {{ product().name }}
 ```
 
-> **Note:** `providedIn: 'root'` is what makes it a singleton. If you instead list a service in a single component's `providers` array, that component (and its children) get their own separate instance — useful sometimes, but rarely what you want for shared app state.
+### Functional HTTP interceptors
 
-### Typing HTTP Responses
+`mango-http` shows an `HttpInterceptorFn` — a plain function (not a class) registered via `provideHttpClient(withInterceptors([loadingInterceptor]))` — that wraps every outgoing request to flip a shared `LoadingService` signal on and off.
 
-A TypeScript `interface` (like `Post` or `Product` in this class) describes the *shape* of the JSON coming back from the server, and gets passed as a generic to `HttpClient.get<Post[]>(...)`.
-
-**Why it exists:** without a shared type, every component that touches the response would need to guess its shape independently, and a typo like `post.titel` would only fail at runtime. A shared interface gives you autocomplete and compile-time errors everywhere the data flows.
+**Why it exists:** cross-cutting concerns (loading spinners, auth headers, logging) shouldn't be duplicated in every service method. An interceptor sits in the middle of the HTTP pipeline and applies to every request automatically, and using `finalize()` guarantees the "loading off" step runs whether the request succeeds or fails.
 
 ```typescript
-export interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
+  loadingService.show();
+  return next(req).pipe(finalize(() => loadingService.hide()));
+};
 ```
 
-> **Gotcha:** TypeScript types are compile-time only — `HttpClient.get<Post[]>()` doesn't actually *validate* the response at runtime. If the API's real shape drifts from your interface, TypeScript won't catch it; you'd need something like Zod for runtime validation.
-
-### Structuring a Feature: Services + Components
-
-The `mango` app splits responsibilities across dedicated services (`ProductService`, `CartService`, both `providedIn: 'root'`) and "dumb" presentational components (`ProductCardComponent`, `NavbarComponent`) that just read from those services via `inject()`.
-
-**Why it exists:** because `ProductService` holds the product list in a `BehaviorSubject`, both `ProductListComponent` (which displays products) and `NavbarComponent` (which shows a product count badge) automatically stay in sync — neither component knows the other exists. This is a lightweight, framework-native alternative to a full state-management library for small-to-medium apps.
-
-```typescript
-@Injectable({ providedIn: 'root' })
-export class CartService {
-  private _items: CartItem[] = [];
-  get items() { return this._items; }
-  add(product: Product) { this._items = [...this._items, { product, quantity: 1 }]; }
-}
-```
-
-### RxJS Operators: map & pipe
-
-`.pipe()` chains RxJS operators together to transform or react to values as they flow through an Observable, without needing to subscribe first. `map()` transforms each emitted value; `tap()` (used in `example1`) runs a side effect without changing the value.
-
-**Why it exists:** instead of subscribing and then manually reshaping data inside the callback, `pipe()` lets you describe the transformation declaratively, and keeps that logic reusable and composable with other operators (`catchError`, `retry`, `debounceTime`, etc.).
-
-```typescript
-this.http.get<Post[]>('/api/posts').pipe(
-  map((posts) => posts.filter((p) => p.userId === 1)),
-);
-```
+> **Note:** interceptor **order matters** — the array passed to `withInterceptors([...])` runs in that order for the outgoing request and the reverse order for the response.
 
 ## Theory
 
-- **Observables vs. Promises**: a `Promise` represents a single future value and starts executing the moment it's created, regardless of whether anyone is listening. An `Observable` can emit zero, one, or many values over time, is "lazy" (it does nothing until subscribed to), and is cancellable (`unsubscribe()`) — a `Promise` can't be cancelled once started. HTTP requests via `HttpClient` are single-value Observables, but the same API also powers streams like WebSocket messages or keyboard events, which is where the extra power of Observables really shows.
-- **Cold vs. hot Observables (beginner level)**: a "cold" Observable — like `HttpClient.get()` — doesn't do any work until you subscribe, and each new subscriber triggers its own independent execution (its own separate HTTP request). A "hot" Observable — like a `BehaviorSubject` inside a shared service — is already "running" and simply broadcasts new values to whoever happens to be subscribed at the time, which is why `BehaviorSubject` is the right tool for shared app state (everyone shares one source, not one request each).
-- **Why Angular services exist for sharing state/logic**: components are created and destroyed as the user navigates around (thanks to routing), but a `providedIn: 'root'` service is created once and lives for the lifetime of the app. That makes services the natural home for anything that needs to outlive a single component or be shared between components that don't have a parent/child relationship.
-- **The DI hierarchy, briefly**: Angular's injector isn't flat — there's a root injector (app-wide) and injectors per component/route that can override what a service resolves to for that subtree. `providedIn: 'root'` registers with the root injector, giving you one instance for the whole app; listing the same service in a component's own `providers` array creates a fresh instance scoped to that component and its children instead.
+- **Signals and change detection:** a component that only reads signals in its template can opt into a more granular change-detection strategy — Angular knows precisely which DOM bindings depend on which signal, instead of re-checking the whole tree on every event. This is part of Angular's broader move toward signal-based, "zoneless" apps.
+- **Push-based vs. pull-based reactivity:** RxJS is push-based — values are pushed to subscribers as they happen. Signals are closer to pull-based — a signal's value is just read synchronously when needed, and Angular tracks *who* read it to know what to re-check later. `computed()` is what makes signals feel push-based in practice, since it recomputes automatically.
+- **Why some services in `mango` still avoid signals:** signals are a tool, not a mandate. A service like `CartService` that's only ever read synchronously and doesn't need fine-grained tracking works fine as a plain field — comparing it against a signal-based equivalent (as this class's code does) is a good way to build intuition for when signals actually pay off.
+- **Interceptors and the request/response pipeline:** every `HttpClient` call passes through the chain of registered interceptors before hitting the network, and the response passes back through the same chain in reverse — the same shape as Express/Koa middleware, if that's a comparison you already know.
 
 ## Useful Links
 
 | Topic | Link |
 |---|---|
-| HttpClient guide | [angular.dev/guide/http](https://angular.dev/guide/http) |
-| `provideHttpClient` API | [angular.dev/api/common/http/provideHttpClient](https://angular.dev/api/common/http/provideHttpClient) |
-| Dependency injection guide | [angular.dev/guide/di](https://angular.dev/guide/di) |
-| `inject()` function | [angular.dev/api/core/inject](https://angular.dev/api/core/inject) |
-| Standalone components guide | [angular.dev/guide/components/importing](https://angular.dev/guide/components/importing) |
-| `@Injectable` and `providedIn` | [angular.dev/api/core/Injectable](https://angular.dev/api/core/Injectable) |
 | Signals guide | [angular.dev/guide/signals](https://angular.dev/guide/signals) |
-| RxJS Observable overview | [rxjs.dev/guide/observable](https://rxjs.dev/guide/observable) |
-| RxJS `map` operator | [rxjs.dev/api/operators/map](https://rxjs.dev/api/operators/map) |
-| RxJS `BehaviorSubject` | [rxjs.dev/api/index/class/BehaviorSubject](https://rxjs.dev/api/index/class/BehaviorSubject) |
-| MDN: using Promises | [developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises) |
-| MDN: `fetch()` API | [developer.mozilla.org/en-US/docs/Web/API/Fetch_API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) |
+| `signal()` API | [angular.dev/api/core/signal](https://angular.dev/api/core/signal) |
+| `computed()` API | [angular.dev/api/core/computed](https://angular.dev/api/core/computed) |
+| `effect()` API | [angular.dev/api/core/effect](https://angular.dev/api/core/effect) |
+| Signal-based `input()` | [angular.dev/guide/signals/inputs](https://angular.dev/guide/signals/inputs) |
+| HttpClient interceptors guide | [angular.dev/guide/http/interceptors](https://angular.dev/guide/http/interceptors) |
+| `provideHttpClient` / `withInterceptors` | [angular.dev/api/common/http/withInterceptors](https://angular.dev/api/common/http/withInterceptors) |
+| RxJS `switchMap` | [rxjs.dev/api/operators/switchMap](https://rxjs.dev/api/operators/switchMap) |
+| RxJS `debounceTime` | [rxjs.dev/api/operators/debounceTime](https://rxjs.dev/api/operators/debounceTime) |
+| MDN: `localStorage` | [developer.mozilla.org/en-US/docs/Web/API/Window/localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) |
 
 ## Mini Examples
 
-**1. A GET request with error handling**
+**1. A signal-backed counter with a computed doubled value**
 
 ```typescript
-@Injectable({ providedIn: 'root' })
-export class UserService {
-  private http = inject(HttpClient);
+const count = signal(0);
+const doubled = computed(() => count() * 2);
 
-  getUser(id: number) {
-    return this.http.get<User>(`/api/users/${id}`).pipe(
-      catchError((err) => {
-        console.error('Failed to load user', err);
-        return of(null); // fall back to a safe value instead of breaking the stream
-      }),
-    );
-  }
-}
+count.update(v => v + 1);
+console.log(doubled()); // recalculated automatically
 ```
 
-**2. A POST request that sends a body**
+**2. Syncing a signal to localStorage with effect()**
 
 ```typescript
-@Injectable({ providedIn: 'root' })
-export class TodoService {
-  private http = inject(HttpClient);
+const theme = signal<'light' | 'dark'>('light');
 
-  addTodo(title: string) {
-    return this.http.post<Todo>('/api/todos', { title, done: false });
-  }
-}
+effect(() => {
+  localStorage.setItem('theme', theme());
+});
 ```
 
-**3. A shared counter service pattern (same shape as CartService)**
-
-```typescript
-@Injectable({ providedIn: 'root' })
-export class FavoritesService {
-  private favorites = new BehaviorSubject<number[]>([]);
-  favorites$ = this.favorites.asObservable();
-
-  toggle(id: number) {
-    const current = this.favorites.getValue();
-    const next = current.includes(id)
-      ? current.filter((f) => f !== id)
-      : [...current, id];
-    this.favorites.next(next);
-  }
-}
-```
-
-**4. Consuming a service with the async pipe (no manual subscribe/unsubscribe)**
+**3. A signal-based input on a presentational component**
 
 ```typescript
 @Component({
-  selector: 'app-favorites-count',
-  imports: [AsyncPipe],
-  template: `<span>{{ (favoritesService.favorites$ | async)?.length }} favorites</span>`,
+  selector: 'app-badge',
+  template: `<span>{{ label() }}: {{ count() }}</span>`,
 })
-export class FavoritesCountComponent {
-  favoritesService = inject(FavoritesService);
+export class BadgeComponent {
+  label = input.required<string>();
+  count = input(0);
 }
+```
+
+**4. A minimal functional interceptor**
+
+```typescript
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const token = inject(AuthService).token();
+  const cloned = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+  return next(cloned);
+};
 ```
 
 ## Practice Exercises
 
 **Beginner**
-- Fix the missing `provideHttpClient()` call in `example1/src/app/app.config.ts` and `example2/src/app/app.config.ts` so the HTTP requests actually work — import it from `@angular/common/http` and add it to the `providers` array.
+- In `example`, add a new `signal<string>('')` for a "name" field, and render `Hello, {{ name() }}!` in the template — wire an `<input>` to it using `(input)` and `.set()`.
 
 **Beginner**
-- In `example2`, add a `console.log` inside the `.subscribe()` callback in `app.component.ts` that logs `Date.now()`, and compare the timestamp to the one already logged outside the subscription — confirm for yourself which one runs first and why.
+- In `mango-http`, open `loading.interceptor.ts` and add a `console.log` before and after the request to confirm the interceptor really does wrap every outgoing call, not just one.
 
 **Intermediate**
-- Add a `removeProduct(id: number)` method to `mango`'s `ProductService`, and wire up a "Remove" button in `product-card.component.html` — watch the navbar's product count badge update automatically since both read from the same `BehaviorSubject`.
+- In `mango`, refactor `CartService` from its plain-field implementation to use `signal()` and `computed()` for the item count and total price — compare how much code changes in the components that read from it.
 
 **Intermediate**
-- Give `example2`'s `PostService.getPosts()` a `.pipe(map(...))` step that filters posts to only `userId === 1`, and confirm the component doesn't need any changes since it just consumes whatever the service returns.
+- In `mango-http`, add a second signal to `LoadingService` that tracks the *number* of in-flight requests (not just a boolean), so the loading overlay only hides once every concurrent request has finished.
 
 **Challenge**
-- Add a `catchError` to `mango`'s `ProductService` (simulate a failing request with `throwError`) and surface a user-friendly error message in `ProductListComponent` instead of letting the Observable silently break.
+- In `example`, extend the `summary` computed signal (or a similar computed) to depend on multiple signals, then use `untracked()` inside it to read one signal without registering it as a dependency — verify in the console which signal changes actually trigger a recompute and which don't.

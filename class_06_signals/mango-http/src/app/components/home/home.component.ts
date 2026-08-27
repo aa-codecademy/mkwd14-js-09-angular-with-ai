@@ -20,6 +20,9 @@ export class HomeComponent implements OnInit {
 
   featuredProducts = signal<Product[]>([]);
 
+  // Gotcha: this subscription is never stored/unsubscribed. It's safe here only because
+  // HttpClient observables complete after one emission and clean themselves up - with a
+  // long-lived observable (e.g. a WebSocket or interval) this pattern would leak.
   ngOnInit(): void {
     this.productService.getFeatured().subscribe((featuredProducts) => {
       this.featuredProducts.set(featuredProducts);

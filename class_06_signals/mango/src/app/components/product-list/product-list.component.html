@@ -7,6 +7,11 @@
     <mat-label>Search products</mat-label>
     <!-- (ngModelChange)="" -->
     <!-- [ngModel]="" -->
+    <!-- GOTCHA: [(ngModel)] two-way binding desugars to [ngModel]="searchQuery" (ngModelChange)="searchQuery = $event".
+    That means on every keystroke it REPLACES the `searchQuery` class field with a plain string, wiping out
+    the WritableSignal that lived there - after the first keystroke, searchQuery() below would throw
+    "searchQuery is not a function". The safe pattern with signals is [ngModel]="searchQuery()"
+    (ngModelChange)="searchQuery.set($event)", or Angular's model() input for two-way signal binding. -->
     <input matInput type="search" , placeholder="Search..." [(ngModel)]="searchQuery" />
   </mat-form-field>
 

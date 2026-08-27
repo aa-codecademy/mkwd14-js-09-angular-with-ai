@@ -21,6 +21,10 @@ export class HomeComponent implements OnInit {
   featuredProducts = signal<Product[]>([]);
 
   ngOnInit(): void {
+    // The service still returns an Observable (RxJS) - .subscribe() bridges that async HTTP result
+    // into the signal via .set(), which replaces the whole value and notifies anything reading
+    // featuredProducts() to update. Never do `this.featuredProducts = featuredProducts` - that
+    // overwrites the signal itself, not its value, breaking every future .set()/() call.
     this.productService.getFeatured().subscribe((featuredProducts) => {
       this.featuredProducts.set(featuredProducts);
     });

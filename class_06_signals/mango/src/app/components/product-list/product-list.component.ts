@@ -37,11 +37,19 @@ import { MatButtonModule } from '@angular/material/button';
 // each ngOnX method below matches Angular's expected signature - this is the router's 'products' page.
 export class ProductListComponent implements OnInit, OnDestroy {
   private productService = inject(ProductService);
+  // Writable signals hold this component's state - reading them in the template/computed requires
+  // calling them as functions (products(), searchQuery()); forgetting the () gives you the signal
+  // object itself, not its value, which is a common beginner mistake.
   products = signal<Product[]>([]);
   searchQuery = signal('');
 
+  // The HTTP call itself is still RxJS (services return Observables) - Subscription cleanup is still
+  // needed for that async call, signals don't replace RxJS, they just replace how you STORE the result.
   subscription: Subscription = new Subscription();
 
+  // computed() derives a new value from other signals and re-runs ONLY when searchQuery() or
+  // products() actually change - Angular tracks the dependencies automatically just by seeing which
+  // signals get called inside this function, no manual dependency array like useMemo.
   filteredProducts = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
     const products = this.products();
