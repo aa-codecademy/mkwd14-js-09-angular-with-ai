@@ -11,6 +11,7 @@ Each homework builds on everything taught in class up to that point — check th
 | 1 | Nestly — an Airbnb-style listings page | Class 1 (components, bindings, control flow, pipes) + Class 2 (content projection, directives, custom pipes) | [hmw_1.md](./hmw_1.md) |
 | 2 | Nestly gets multiple pages — adding routing | Class 3 (routing, lazy loading, services) — builds on Homework 1 | [hmw_2.md](./hmw_2.md) |
 | 3 | Nestly gets real HTTP calls — connecting to a backend | Class 4 (`HttpClient`, services, observables) — builds on Homework 1 + 2. Uses the [`nestly-server`](./nestly-server) backend included in this repo. | [hmw_3.md](./hmw_3.md) |
+| 4 | Nestly, now hosts can list a stay — a reactive form | Class 7 (Reactive Forms — `FormBuilder`, `FormGroup`, `FormArray`, custom & cross-field validators) — builds on Homework 1 + 2 + 3 | [hmw_4.md](./hmw_4.md) |
 
 ## How to submit
 

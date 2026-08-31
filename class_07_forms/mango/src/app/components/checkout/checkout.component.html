@@ -1,10 +1,16 @@
 <div class="container checkout-container">
   <h1 class="checkout-title">Checkout</h1>
 
+  <!-- linear stepper - each step must be completed/valid before moving to the next -->
   <mat-stepper [linear]="true" #stepper>
+    <!-- [stepControl]="addressForm" wires this step's "Next" button to the FormGroup's
+         validity - it's disabled until addressForm.valid is true. This is how reactive
+         forms integrate cleanly with UI components outside plain HTML forms. -->
     <mat-step [stepControl]="addressForm" label="Shipping Address">
       <form [formGroup]="addressForm">
         <div class="name-fields-grid">
+          <!-- mat-form-field + matInput is Angular Material's wrapper around a native input -
+               formControlName still binds it to the FormGroup exactly like a plain input. -->
           <mat-form-field appearance="outline">
             <mat-label>First name</mat-label>
             <input type="text" matInput formControlName="firstName" />
@@ -15,6 +21,9 @@
             <input type="text" matInput formControlName="lastName" />
           </mat-form-field>
         </div>
+        <!-- NOTE: addressForm also defines street/city/postalCode/country/phone controls,
+             but this template only renders firstName/lastName - the group stays invalid
+             until inputs for the missing required fields are added too. -->
       </form>
     </mat-step>
     <mat-step label="Confirm Order"> </mat-step>

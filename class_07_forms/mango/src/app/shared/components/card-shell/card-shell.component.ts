@@ -7,6 +7,8 @@ import { MatCardModule } from '@angular/material/card';
   selector: 'app-card-shell',
   templateUrl: './card-shell.component.html',
   styleUrl: './card-shell.component.css',
+  // standalone component imports array - must list every directive/component used in the
+  // template (here just MatCardModule for mat-card/mat-card-content/mat-card-actions).
   imports: [MatCardModule],
 })
 export class CardShellComponent {}

@@ -12,5 +12,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
   styleUrl: './product-not-found.component.css',
 })
 export class ProductNotFound {
+  // input.required() - signal-based @Input(); Angular throws at runtime if the parent
+  // template doesn't bind a value for it, unlike a plain optional input().
   productId = input.required<number | null>();
 }

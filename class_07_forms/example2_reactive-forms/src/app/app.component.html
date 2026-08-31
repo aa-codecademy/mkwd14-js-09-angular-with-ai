@@ -2,9 +2,13 @@
 @if (namePreview) {
   <h3>Hello {{ namePreview }}, thank you registering in our App.</h3>
 }
+<!-- [formGroup] links this <form> element to the FormGroup instance built in the TS class -
+     that's the reactive-forms way of connecting template to model (no ngModel here). -->
 <form [formGroup]="form" (ngSubmit)="onSubmit()">
   <div>
     <label>Full Name</label>
+    <!-- formControlName matches a key in the FormGroup by string - a typo here fails silently
+         at first glance but throws at runtime ("Cannot find control..."). -->
     <input formControlName="name" />
 
     @if (f['name'].invalid && f['name'].touched) {
@@ -64,8 +68,13 @@
     }
   </div>
 
+  <!-- formArrayName tells Angular this <div> maps to the "phones" FormArray, so the
+       [formControl] bindings inside can reach into it. -->
   <div formArrayName="phones">
     <label>Phone Number(s)</label>
+    <!-- Looping over FormArray.controls, not a plain value array - each item is itself a
+         live FormControl, bound directly with [formControl] rather than formControlName
+         (there's no fixed string key for array items). -->
     @for (ctrl of phones.controls; track ctrl) {
       <div>
         <input type="tel" [formControl]="ctrl" />
@@ -84,4 +93,6 @@
   <p>Form Status: {{ form.status }}</p>
 </form>
 
+<!-- json pipe is a quick way to eyeball the live form value while developing - remove in
+     production, but great for teaching/debugging reactive forms. -->
 <pre>{{ form.value | json }}</pre>

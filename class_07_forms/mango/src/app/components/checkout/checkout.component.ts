@@ -24,6 +24,8 @@ import { MatInput } from "@angular/material/input";
 export class CheckoutComponent {
   private fb = inject(FormBuilder);
 
+  // Real-world reactive form used inside a Material stepper - each mat-step can be gated on
+  // a form's validity via [stepControl], so users can't advance past an invalid step.
   addressForm: FormGroup = this.fb.group({
     firstName: ['', Validators.required],
     lastName: ['', Validators.required],

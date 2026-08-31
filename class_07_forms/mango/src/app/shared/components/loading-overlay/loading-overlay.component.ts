@@ -12,6 +12,7 @@ import { LoadingService } from '../../services/loading.service';
   styleUrl: './loading-overlay.component.css',
 })
 export class LoadingOverlayComponent {
-  // Public so the template can call loadingService.isLoading() directly.
+  // inject() - modern DI, avoids constructor boilerplate. Public (no `private`) so the
+  // template can call loadingService.isLoading() directly.
   loadingService = inject(LoadingService)
 }
