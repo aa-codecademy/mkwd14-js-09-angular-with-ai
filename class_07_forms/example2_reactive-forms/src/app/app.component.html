@@ -1,0 +1,87 @@
+<h2>Reactive Registration Form</h2>
+@if (namePreview) {
+  <h3>Hello {{ namePreview }}, thank you registering in our App.</h3>
+}
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <div>
+    <label>Full Name</label>
+    <input formControlName="name" />
+
+    @if (f['name'].invalid && f['name'].touched) {
+      @if (f['name'].errors?.['required']) {
+        <p class="error">Name is required</p>
+      }
+
+      @if (f['name'].errors?.['minlength']) {
+        <p class="error">Name must be at least 2 characters long</p>
+      }
+    }
+  </div>
+  <div>
+    <label>Email</label>
+    <input formControlName="email" type="email" />
+
+    @if (f['email'].invalid && f['email'].touched) {
+      @if (f['email'].errors?.['required']) {
+        <p class="error">Email is required</p>
+      }
+
+      @if (f['name'].errors?.['email']) {
+        <p class="error">Email must be of valid email format</p>
+      }
+    }
+  </div>
+  <div>
+    <label>Password</label>
+    <input formControlName="password" type="password" />
+
+    @if (f['password'].invalid && f['password'].touched) {
+      @if (f['password'].errors?.['required']) {
+        <p class="error">Password is required</p>
+      }
+
+      @if (f['password'].errors?.['minlength']) {
+        <p class="error">Password must be at least 8 characters long</p>
+      }
+    }
+  </div>
+  <div>
+    <label>Confirm Password</label>
+    <input formControlName="confirmPassword" type="password" (focus)="onConfirmPassFocus()" />
+
+    @if (f['confirmPassword'].invalid && f['confirmPassword'].touched) {
+      @if (f['confirmPassword'].errors?.['required']) {
+        <p class="error">Confirmation password is required</p>
+      }
+    }
+
+    @if (
+      form.errors?.['passwordsMismatch'] &&
+      f['confirmPassword'].valid &&
+      f['confirmPassword'].touched
+    ) {
+      <p class="error">Passwords do not match</p>
+    }
+  </div>
+
+  <div formArrayName="phones">
+    <label>Phone Number(s)</label>
+    @for (ctrl of phones.controls; track ctrl) {
+      <div>
+        <input type="tel" [formControl]="ctrl" />
+        <button
+          type="button"
+          [disabled]="phones.controls.length <= 1"
+          (click)="removePhone($index)"
+        >
+          Remove
+        </button>
+      </div>
+    }
+    <button type="button" (click)="addPhone()">Add Phone Number</button>
+  </div>
+  <button type="submit" [disabled]="form.invalid">Register</button>
+  <p>Form Status: {{ form.status }}</p>
+</form>
+
+<pre>{{ form.value | json }}</pre>

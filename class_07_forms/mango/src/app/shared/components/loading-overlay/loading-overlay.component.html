@@ -1,0 +1,7 @@
+<!-- Gotcha: must call isLoading() with parentheses to read the signal's boolean value - using
+     `loadingService.isLoading` (no call) would always be truthy since it's a function reference. -->
+@if (loadingService.isLoading()) {
+  <div class="loading-overlay">
+    <mat-spinner diameter="48" color="primary" />
+  </div>
+}

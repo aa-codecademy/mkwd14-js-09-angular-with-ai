@@ -1,0 +1,22 @@
+<div class="container checkout-container">
+  <h1 class="checkout-title">Checkout</h1>
+
+  <mat-stepper [linear]="true" #stepper>
+    <mat-step [stepControl]="addressForm" label="Shipping Address">
+      <form [formGroup]="addressForm">
+        <div class="name-fields-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>First name</mat-label>
+            <input type="text" matInput formControlName="firstName" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Last name</mat-label>
+            <input type="text" matInput formControlName="lastName" />
+          </mat-form-field>
+        </div>
+      </form>
+    </mat-step>
+    <mat-step label="Confirm Order"> </mat-step>
+  </mat-stepper>
+</div>
