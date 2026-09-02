@@ -33,7 +33,7 @@
         color="primary"
         class="full-width"
         [disabled]="product().stock <= 0"
-        (click)="addToCart(product())"
+        (click)="addToCart(product(), $event)"
       >
         <mat-icon>shopping_cart</mat-icon>
         Add to card

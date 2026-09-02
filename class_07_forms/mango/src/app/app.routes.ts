@@ -32,6 +32,11 @@ export const routes: Routes = [
       import('./components/checkout/checkout.component').then((m) => m.CheckoutComponent),
   },
   {
+    path: 'orders',
+    loadComponent: () =>
+      import('./components/orders/orders.component').then((m) => m.OrdersComponent),
+  },
+  {
     path: '**',
     loadComponent: () =>
       import('./shared/components/not-found/not-found.component').then((m) => m.NotFound),

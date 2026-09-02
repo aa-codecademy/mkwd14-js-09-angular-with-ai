@@ -5,7 +5,7 @@ import { CurrencyPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { CartService } from '../../shared/services/cart.service';
-import { RouterLink } from "@angular/router";
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-product-card',
@@ -19,8 +19,8 @@ import { RouterLink } from "@angular/router";
     MatCardActions,
     MatButtonModule,
     MatIcon,
-    RouterLink
-],
+    RouterLink,
+  ],
   templateUrl: './product-card.component.html',
   styleUrl: './product-card.component.css',
 })
@@ -31,7 +31,8 @@ export class ProductCardComponent {
   product = input.required<Product>();
 
   // Stubbed out on purpose for this lesson - wire this up to a cart service in a later exercise.
-  addToCart(product: Product) {
+  addToCart(product: Product, event: Event) {
+    event.stopPropagation(); // TODO: Fix this issue
     this.cartService.add(product);
   }
 }
