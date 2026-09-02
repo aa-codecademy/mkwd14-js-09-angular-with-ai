@@ -1,0 +1,49 @@
+.form-container {
+  padding: 24px 16px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 1.8rem;
+  font-weight: 300;
+  margin-bottom: 24px;
+}
+
+.full-width-field {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.number-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.images-array {
+  margin-bottom: 16px;
+}
+
+.images-label {
+  font-size: 0.85rem;
+  color: #666;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.image-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.image-field {
+  flex: 1;
+}
+
+.actions-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}

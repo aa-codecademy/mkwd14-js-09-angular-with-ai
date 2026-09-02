@@ -1,0 +1,72 @@
+<div class="container form-container">
+  <h1>New Product</h1>
+
+  <form [formGroup]="form" (ngSubmit)="submitForm()">
+    <mat-form-field appearance="outline" class="full-width-field">
+      <mat-label>Product name</mat-label>
+      <input type="text" matInput formControlName="name" />
+      <mat-error>Name is required (min 3 characters)</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width-field">
+      <mat-label>Description</mat-label>
+      <input type="text" matInput formControlName="description" />
+      <mat-error>Description is required (min 10 characters)</mat-error>
+    </mat-form-field>
+
+    <div class="number-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Price (€)</mat-label>
+        <input type="number" matInput formControlName="price" min="0" />
+        <mat-error>Price must be a positive number</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Discount %</mat-label>
+        <input type="number" matInput formControlName="discountPercent" min="0" max="100" />
+        <mat-error>Discount percentage must be a positive number</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Stock</mat-label>
+        <input type="number" matInput formControlName="stock" min="0" />
+        <mat-error>Stock must be a positive number</mat-error>
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width-field">
+      <mat-label>SKU</mat-label>
+      <input type="text" matInput formControlName="sku" />
+      @if (form.get('sku')?.errors?.['skuTaken']) {
+        <mat-error>SKU is already taken</mat-error>
+      } @else {
+        <mat-error>SKU is required</mat-error>
+      }
+    </mat-form-field>
+
+    <div formArrayName="images" class="images-array">
+      <label class="images-label"> Product Images </label>
+      @for (ctrl of imagesArray.controls; track ctrl) {
+        <div class="image-row">
+          <mat-form-field appearance="outline" class="image-field">
+            <mat-label>Image URL {{ $index + 1 }}</mat-label>
+            <input type="url" matInput [formControl]="ctrl" />
+          </mat-form-field>
+          @if (imagesArray.controls.length > 1) {
+            <button mat-icon-button color="warn" type="button" (click)="removeImage($index)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          }
+        </div>
+      }
+      <button mat-stroked-button type="button" (click)="addImage()">
+        <mat-icon>add</mat-icon>Add Image
+      </button>
+    </div>
+
+    <div class="actions-row">
+      <a mat-stroked-button routerLink="/admin">Cancel</a>
+      <button mat-flat-button color="primary" type="submit">Create Product</button>
+    </div>
+  </form>
+</div>
