@@ -14,11 +14,17 @@ export class CreateProductDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ example: 'ultrabook-pro-14' })
+  @ApiPropertyOptional({
+    example: 'ultrabook-pro-14',
+    description: 'Derived from the name when omitted',
+  })
+  @IsOptional()
   @IsString()
-  slug: string;
+  slug?: string;
 
-  @ApiProperty({ example: 'A lightweight 14" laptop with all-day battery life.' })
+  @ApiProperty({
+    example: 'A lightweight 14" laptop with all-day battery life.',
+  })
   @IsString()
   description: string;
 

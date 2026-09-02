@@ -44,7 +44,7 @@ export class Product {
   @Column({ type: 'int', default: 0 })
   stock: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, unique: true })
   sku: string;
 
   @Column({ type: 'boolean', default: false })

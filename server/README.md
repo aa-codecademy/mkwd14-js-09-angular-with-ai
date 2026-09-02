@@ -23,13 +23,49 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Shared backend for the Mango reference app used across the Angular training
+modules (G06+). Serves `/api/products`, `/api/categories`, `/api/auth` and
+`/api/orders`, with Swagger at `/api/docs`.
 
 ## Project setup
 
 ```bash
 $ npm install
+$ cp .env.example .env   # then fill in DB_PASSWORD
+$ npm run seed           # products + categories
 ```
+
+## Running the modules that have not covered auth yet
+
+`/api/orders` and the product write routes require a logged-in user, which the
+apps before G12 cannot provide. Setting `AUTH_BYPASS=true` in `.env` makes auth
+**optional** rather than absent:
+
+- A request with **no token** runs as a seeded dev account
+  (`dev-admin@mango.local`, ADMIN by default), so admin CRUD and `/orders` work
+  with no `Authorization` header at all.
+- A request **with a real token** is authenticated normally and roles are still
+  enforced — so the apps that do implement auth (G12+) behave identically
+  whether the flag is on or off.
+
+That is the point of the flag: **the frontend never has to know whether the app
+it belongs to supports auth.** No Angular code changes either way.
+
+`AUTH_BYPASS_ROLE=USER` runs the implicit identity as a non-admin instead, which
+is handy for checking that role-gated UI hides correctly.
+
+While the flag is on, two extra routes are mounted (they 404 otherwise):
+
+| Route | Purpose |
+| --- | --- |
+| `POST /api/dev/seed-users` | Creates one fake account per role and returns their credentials (shared password `devpassword123`). G12+ apps can `POST /api/auth/login` with those to get a real session without registering by hand. |
+| `GET /api/dev/status` | Reports whether the bypass is on and which identity unauthenticated requests run as. |
+
+The dev accounts are seeded into the database on boot so that rows referencing a
+user — orders, for instance — still point at a real record.
+
+> The server **refuses to start** with `AUTH_BYPASS=true` and
+> `NODE_ENV=production`, since it would turn every guard in the app into a no-op.
 
 ## Compile and run the project
 

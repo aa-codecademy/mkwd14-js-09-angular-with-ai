@@ -17,6 +17,7 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { QueryProductsDto } from './dto/query-products.dto';
+import { CheckSkuDto } from './dto/check-sku.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -27,9 +28,20 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List products, optionally filtered by category/search/featured' })
+  @ApiOperation({
+    summary: 'List products, optionally filtered by category/search/featured',
+  })
   findAll(@Query() query: QueryProductsDto) {
     return this.productsService.findAll(query);
+  }
+
+  // Declared before ':id' so the literal path wins over the param route.
+  @Get('sku-available')
+  @ApiOperation({
+    summary: 'Check whether a SKU is free (for async form validation)',
+  })
+  checkSku(@Query() query: CheckSkuDto) {
+    return this.productsService.isSkuAvailable(query.sku, query.excludeId);
   }
 
   @Get(':id')

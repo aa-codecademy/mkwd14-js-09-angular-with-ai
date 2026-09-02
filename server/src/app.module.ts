@@ -6,10 +6,13 @@ import { AppService } from './app.service';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { AuthModule } from './auth/auth.module';
-import { SeedModule } from './seed/seed.module';
+import { OrdersModule } from './orders/orders.module';
+import { DevAuthModule } from './dev-auth/dev-auth.module';
 import { Category } from './categories/category.entity';
 import { Product } from './products/product.entity';
 import { User } from './auth/entities/user.entity';
+import { Order } from './orders/order.entity';
+import { OrderItem } from './orders/order-item.entity';
 
 @Module({
   imports: [
@@ -24,14 +27,15 @@ import { User } from './auth/entities/user.entity';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [Category, Product, User],
+        entities: [Category, Product, User, Order, OrderItem],
         synchronize: true,
       }),
     }),
     CategoriesModule,
     ProductsModule,
     AuthModule,
-    SeedModule,
+    OrdersModule,
+    DevAuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,6 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export type ProductSortField = 'name' | 'price' | 'createdAt';
 export type SortDirection = 'asc' | 'desc';
@@ -23,19 +30,22 @@ export class QueryProductsDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ default: 1 })
+  // No default values here on purpose: the service distinguishes "no pagination
+  // requested" (returns a plain array) from an explicit page/limit (returns a
+  // paginated envelope), which is only possible while these stay undefined.
+  @ApiPropertyOptional({ description: 'Defaults to 1 when limit is supplied' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  page?: number = 1;
+  page?: number;
 
-  @ApiPropertyOptional({ default: 12 })
+  @ApiPropertyOptional({ description: 'Defaults to 12 when page is supplied' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  limit?: number = 12;
+  limit?: number;
 
   @ApiPropertyOptional({ enum: ['name', 'price', 'createdAt'] })
   @IsOptional()
