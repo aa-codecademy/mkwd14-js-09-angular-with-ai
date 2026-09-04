@@ -48,12 +48,15 @@ export class CheckoutComponent {
   });
 
   placeOrder() {
+    // Debug log - remove before shipping; console.log in production leaks customer data.
     console.log('Order to be sent:', {
       items: this.cartService.items(),
       shippingAddress: this.addressForm.value,
     });
 
+    // items() is a signal: calling it reads the current value (signals are functions, not properties).
     const cartItems = this.cartService.items();
+    // Send only ids + quantities: the server looks up prices itself so the total can't be faked.
     const items = cartItems.map((item) => ({
       productId: item.product.id,
       quantity: item.quantity,
@@ -61,16 +64,20 @@ export class CheckoutComponent {
 
     const body: CreateOrder = {
       items,
+      // addressForm.value passes straight into ShippingAddress because the control names
+      // match that interface's keys exactly - that's not a coincidence, design your forms this way.
       shippingAddress: this.addressForm.value,
     };
 
     this.orderService.create(body).subscribe({
       next: (order) => {
         console.log(order);
+        // Clear the cart only after the server confirms - never optimistically before.
         this.cartService.clear();
         this.notificationService.showSuccess('Order submitted successfully!');
         this.router.navigate(['/orders']);
       },
+      // Prefer the server's message when there is one, and fall back to something human-readable.
       error: (error) =>
         this.notificationService.showError(
           error.error?.message || 'Issue while submitting the order.',

@@ -14,6 +14,8 @@ Forms are how your app collects data from a human — logins, registrations, che
   - [FormArray](#formarray)
   - [Form State: valid, touched, dirty, status](#form-state-valid-touched-dirty-status)
   - [valueChanges & Reactivity](#valuechanges--reactivity)
+  - [Async Validators](#async-validators)
+- [The mango app: where forms show up](#the-mango-app-where-forms-show-up)
 - [Theory](#theory)
 - [Useful Links](#useful-links)
 - [Mini Examples](#mini-examples)
@@ -176,6 +178,70 @@ this.form.get('name')!.valueChanges.subscribe((value) => {
 });
 ```
 
+### Async Validators
+
+An async validator has the same job as a sync one — return `null` for valid, an errors object for invalid — but it returns an `Observable` or `Promise` instead of the value directly. Angular subscribes for you, and while the request is in flight the control's `status` is `'PENDING'`.
+
+**Why it exists:** some rules can only be answered by the server ("is this SKU already used?", "is this email registered?"). You can't answer those synchronously, so Angular gives async validators their own slot and their own pending state.
+
+```typescript
+// In the FormBuilder array shorthand the slots are:
+// [initialValue, syncValidators, asyncValidators]
+sku: ['', Validators.required, [this.validateSku.bind(this)]],
+
+validateSku(control: AbstractControl): Observable<{ skuTaken: boolean } | null> {
+  return this.api.isSkuTaken(control.value).pipe(
+    map((taken) => (taken ? { skuTaken: true } : null)),
+  );
+}
+```
+
+> **Note:** the single biggest `FormBuilder` gotcha lives here. `['', Validators.required, Validators.minLength(3)]` looks like "two validators" but the third slot is for **async** validators — `minLength` lands in the wrong slot and never runs. Always group sync validators into one array: `['', [Validators.required, Validators.minLength(3)]]`.
+
+> **Note:** async validators only run once every sync validator on that control passes. That's deliberate — no point asking the server about an empty field.
+
+## The mango app: where forms show up
+
+The `mango` e-commerce app now has two real reactive forms, and it's worth reading them side by side.
+
+**1. Checkout — a form gating a Material stepper** (`src/app/components/checkout/`)
+
+`[stepControl]="addressForm"` hands the whole `FormGroup` to a `mat-step`. The step refuses to advance while the group is invalid, so you get "you can't continue until this is filled in" without writing a single condition yourself.
+
+```html
+<mat-stepper [linear]="true">
+  <mat-step [stepControl]="addressForm" label="Shipping Address">
+    <form [formGroup]="addressForm">…</form>
+    <button matStepperNext>Continue</button>
+  </mat-step>
+</mat-stepper>
+```
+
+The control names in `addressForm` match the `ShippingAddress` interface key-for-key, which is why `placeOrder()` can pass `this.addressForm.value` straight into the request body. Design your forms to mirror your API models and this conversion step disappears.
+
+**2. Admin product form — FormArray + async validation** (`src/app/components/admin/product-form/`)
+
+This one combines almost everything from the class: sync validators, a `compose()`d pair, an async SKU check, and a `FormArray` of image URLs the user can grow and shrink.
+
+```typescript
+form = this.fb.group({
+  name: ['', [Validators.required, Validators.minLength(3)]],
+  discountPercent: [0, Validators.compose([Validators.min(0), Validators.max(100)])],
+  sku: ['', Validators.required, [this.validateSku.bind(this)]], // async slot
+  images: this.fb.array(['https://picsum.photos/seed/product/600/400']),
+});
+```
+
+Three details in that template are easy to get wrong:
+
+| Detail | Why it matters |
+|---|---|
+| `type="button"` on the delete/add buttons | Inside a `<form>`, buttons default to `type="submit"` — without it, "Add image" submits the form. |
+| `track ctrl` in the `@for` | Tracking the control instance keeps rows stable; tracking `$index` makes Angular reuse the wrong DOM node after a removal. |
+| `[formControl]="ctrl"` (brackets) vs `formControlName="name"` (no brackets) | Inside a `FormArray` there are no names — you bind the control **instance**, so you need the brackets. |
+
+**Supporting pieces worth a look:** `NotificationService` wraps `MatSnackBar` so no component repeats toast config; `AdminProductService` keeps write operations separate from the read-only `ProductService`; and `CreateProduct`/`CreateOrder` are deliberately smaller than `Product`/`Order` — the client sends ids and quantities, and the **server** computes totals so a price can't be faked from the browser.
+
 ## Theory
 
 - **Template-driven vs reactive — the real philosophical difference**: template-driven forms are *asynchronous* and *implicit* — Angular builds the `FormControl`/`NgForm` tree for you behind the scenes as it processes the template, so the model isn't fully available until change detection runs. Reactive forms are *synchronous* and *explicit* — you construct the entire `FormGroup` tree upfront in TypeScript, so it exists and is fully typed/testable before the template ever renders. Pick reactive forms once a form has real complexity (dynamic fields, cross-field rules, unit tests); template-driven forms are fine for small, simple forms.
@@ -199,6 +265,10 @@ this.form.get('name')!.valueChanges.subscribe((value) => {
 | `Validators` API | [angular.dev/api/forms/Validators](https://angular.dev/api/forms/Validators) |
 | Angular Material form field | [material.angular.dev/components/form-field/overview](https://material.angular.dev/components/form-field/overview) |
 | Angular Material stepper | [material.angular.dev/components/stepper/overview](https://material.angular.dev/components/stepper/overview) |
+| `AsyncValidatorFn` API | [angular.dev/api/forms/AsyncValidatorFn](https://angular.dev/api/forms/AsyncValidatorFn) |
+| `FormBuilder` API | [angular.dev/api/forms/FormBuilder](https://angular.dev/api/forms/FormBuilder) |
+| Material snack bar (notifications) | [material.angular.dev/components/snack-bar/overview](https://material.angular.dev/components/snack-bar/overview) |
+| Lazy loading child routes | [angular.dev/guide/routing/common-router-tasks#lazy-loading](https://angular.dev/guide/routing/common-router-tasks) |
 | RxJS Observables (for `valueChanges`) | [rxjs.dev/guide/observable](https://rxjs.dev/guide/observable) |
 
 ## Mini Examples
@@ -264,6 +334,33 @@ ngOnInit() {
 <button type="button" (click)="skills.push(fb.control(''))">Add skill</button>
 ```
 
+**5. A debounced async validator that doesn't hammer the API**
+
+```typescript
+sku = new FormControl('', {
+  validators: [Validators.required],
+  asyncValidators: [
+    (ctrl) => this.api.isSkuTaken(ctrl.value).pipe(
+      debounceTime(400), // wait for a pause in typing
+      map((taken) => (taken ? { skuTaken: true } : null)),
+      first(),           // async validators must COMPLETE, or the control stays PENDING forever
+    ),
+  ],
+  updateOn: 'blur',
+});
+```
+
+**6. Showing the pending state while an async check runs**
+
+```html
+<input matInput formControlName="sku" />
+@if (form.get('sku')?.pending) {
+  <mat-hint>Checking availability…</mat-hint>
+} @else if (form.get('sku')?.errors?.['skuTaken']) {
+  <mat-error>SKU is already taken</mat-error>
+}
+```
+
 ## Practice Exercises
 
 **Beginner**
@@ -273,10 +370,13 @@ ngOnInit() {
 - Convert the reactive registration form's `password` field to also require at least one digit, using an inline custom validator function (a regex check returning `{ noDigit: true }` when it fails).
 
 **Intermediate**
-- Extend the `mango` checkout's `addressForm` template to actually render inputs for the missing `street`, `city`, `postalCode`, and `country` controls, and confirm the stepper's "Next" button only enables once all of them are valid.
+- In the admin product form, disable the "Create Product" button while the form is invalid (`[disabled]="form.invalid"`) and add an early `if (this.form.invalid) { this.form.markAllAsTouched(); return; }` guard at the top of `submitForm()`. Explain why you want **both**.
 
 **Intermediate**
-- Add a "Confirm Order" step to the checkout stepper that displays a read-only summary of `addressForm.value` using the `json` pipe, similar to the reactive registration example.
+- Add a `<mat-hint>Checking availability…</mat-hint>` to the SKU field that only shows while `form.get('sku')?.pending` is true, then raise the fake delay in `validateSku` to 2000ms so you can actually see it.
+
+**Challenge**
+- Make the admin product form work for **editing** too: `products/:id/edit` already routes to the same component, so read the `id` route param, fetch the product, and `patchValue()` the form (remember to rebuild the `images` FormArray — `patchValue` won't create controls that don't exist yet).
 
 **Challenge**
 - Build a reactive "shipping addresses" form where users can add/remove multiple addresses using a `FormArray` of `FormGroup`s (each with its own `street`/`city`/`postalCode` validators), and show a form-level error if two addresses are identical.

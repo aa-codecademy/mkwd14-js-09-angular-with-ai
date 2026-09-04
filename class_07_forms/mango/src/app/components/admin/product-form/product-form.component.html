@@ -1,10 +1,15 @@
 <div class="container form-container">
   <h1>New Product</h1>
 
+  <!-- [formGroup] binds this <form> to the FormGroup in the class; (ngSubmit) fires on submit
+       (button click OR Enter key) - use it instead of (click) on the button so keyboard users work too. -->
   <form [formGroup]="form" (ngSubmit)="submitForm()">
     <mat-form-field appearance="outline" class="full-width-field">
       <mat-label>Product name</mat-label>
+      <!-- formControlName takes a STRING (no brackets) - it is the key inside the FormGroup above. -->
       <input type="text" matInput formControlName="name" />
+      <!-- Material shows <mat-error> only when the control is invalid AND touched, so you don't
+           get red errors on a pristine form. One message here covers both required + minlength. -->
       <mat-error>Name is required (min 3 characters)</mat-error>
     </mat-form-field>
 
@@ -17,6 +22,8 @@
     <div class="number-grid">
       <mat-form-field appearance="outline">
         <mat-label>Price (€)</mat-label>
+        <!-- The HTML min/max attributes here are only browser UI hints (spinner limits).
+             The real validation lives in Validators.min(0) in the class - never trust the attribute alone. -->
         <input type="number" matInput formControlName="price" min="0" />
         <mat-error>Price must be a positive number</mat-error>
       </mat-form-field>
@@ -37,6 +44,8 @@
     <mat-form-field appearance="outline" class="full-width-field">
       <mat-label>SKU</mat-label>
       <input type="text" matInput formControlName="sku" />
+      <!-- Reading a specific error key lets you show a targeted message. 'skuTaken' is the key
+           returned by the async validator; the optional chaining matters because get() can return null. -->
       @if (form.get('sku')?.errors?.['skuTaken']) {
         <mat-error>SKU is already taken</mat-error>
       } @else {
@@ -44,15 +53,23 @@
       }
     </mat-form-field>
 
+    <!-- formArrayName opens a "scope" for the images FormArray - every control inside is addressed
+         by its index rather than by a name. -->
     <div formArrayName="images" class="images-array">
       <label class="images-label"> Product Images </label>
+      <!-- track ctrl (the control object itself) keeps rows stable when you add/remove.
+           Tracking $index instead would make Angular reuse the wrong DOM node after a removal. -->
       @for (ctrl of imagesArray.controls; track ctrl) {
         <div class="image-row">
           <mat-form-field appearance="outline" class="image-field">
             <mat-label>Image URL {{ $index + 1 }}</mat-label>
+            <!-- [formControl]="ctrl" passes the control INSTANCE (note the brackets).
+                 The alternative inside a FormArray is [formControlName]="$index". -->
             <input type="url" matInput [formControl]="ctrl" />
           </mat-form-field>
           @if (imagesArray.controls.length > 1) {
+            <!-- type="button" is critical: inside a <form> the default is type="submit",
+                 so without it clicking delete would submit the whole form. -->
             <button mat-icon-button color="warn" type="button" (click)="removeImage($index)">
               <mat-icon>delete</mat-icon>
             </button>
@@ -66,6 +83,7 @@
 
     <div class="actions-row">
       <a mat-stroked-button routerLink="/admin">Cancel</a>
+      <!-- Exercise: add [disabled]="form.invalid" here so an incomplete product can't be submitted. -->
       <button mat-flat-button color="primary" type="submit">Create Product</button>
     </div>
   </form>

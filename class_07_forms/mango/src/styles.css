@@ -1,4 +1,19 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* border-box everywhere: padding/border count inside the declared width, so
+   `width: 100%` + padding no longer overflows its parent. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
 .spacer {
   flex: 1 1 auto;
 }

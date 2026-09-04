@@ -4,6 +4,8 @@
 }
 
 .navbar-toolbar {
+  /* Belt-and-braces: never let toolbar contents spill horizontally. */
+  overflow-x: hidden;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -18,8 +20,12 @@
   display: flex;
   align-items: center;
   width: 100%;
+  /* Without border-box the 16px side padding is added ON TOP of width: 100%,
+     making the row 32px wider than the toolbar and overflowing the page. */
+  box-sizing: border-box;
   padding: 0 16px;
   height: 64px;
+  min-width: 0;
 }
 
 .navbar-brand {
