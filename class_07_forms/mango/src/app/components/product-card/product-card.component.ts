@@ -32,7 +32,10 @@ export class ProductCardComponent {
 
   // Stubbed out on purpose for this lesson - wire this up to a cart service in a later exercise.
   addToCart(product: Product, event: Event) {
-    event.stopPropagation(); // TODO: Fix this issue
+    // The button lives inside a routerLink <a>, so stop the click from bubbling
+    // up and cancel the anchor's default navigation.
+    event.stopPropagation();
+    event.preventDefault();
     this.cartService.add(product);
   }
 }

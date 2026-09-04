@@ -26,21 +26,6 @@ import { LoadingService } from '../../services/loading.service';
   ],
 })
 export class NavbarComponent {
-  // Same ProductService singleton injected in ProductListComponent - because it's providedIn: 'root',
-  // both components read/write the exact same underlying data, so the badge count stays in sync.
-  private productService = inject(ProductService);
   cartService = inject(CartService);
-  loadingService = inject(LoadingService)
-
-  cartCount = 3;
-  productCount = 0;
-
-  // Subscribes on init and never unsubscribes - fine here because NavbarComponent lives for the
-  // whole app lifetime, but the same pattern in a routed component would need cleanup (see ngOnDestroy
-  // in ProductListComponent).
-  ngOnInit() {
-    this.productService.getAll().subscribe((products) => {
-      this.productCount = products.length;
-    });
-  }
+  loadingService = inject(LoadingService);
 }

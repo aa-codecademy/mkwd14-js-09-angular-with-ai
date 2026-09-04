@@ -8,6 +8,7 @@ import { ProductsModule } from './products/products.module';
 import { AuthModule } from './auth/auth.module';
 import { OrdersModule } from './orders/orders.module';
 import { DevAuthModule } from './dev-auth/dev-auth.module';
+import { SeedModule } from './seed/seed.module';
 import { Category } from './categories/category.entity';
 import { Product } from './products/product.entity';
 import { User } from './auth/entities/user.entity';
@@ -36,6 +37,7 @@ import { OrderItem } from './orders/order-item.entity';
     AuthModule,
     OrdersModule,
     DevAuthModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],

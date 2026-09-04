@@ -1,8 +1,12 @@
-<mat-toolbar color="primary" class="navbar-toolbar">
+<mat-toolbar class="navbar-toolbar">
   <div class="navbar-row">
-    <mat-icon>spa</mat-icon>
-    <a routerLink="/" class="navbar-brand">Mango</a>
-    <div style="display: flex; gap: 5px; margin-left: 5px">
+    <!-- Brand: icon + wordmark act as one link back to home. -->
+    <a routerLink="/" class="navbar-brand">
+      <mat-icon class="navbar-brand-icon">spa</mat-icon>
+      <span class="navbar-brand-text">Mango</span>
+    </a>
+
+    <nav class="navbar-nav">
       <a
         routerLink="/"
         mat-button
@@ -11,27 +15,34 @@
         [routerLinkActiveOptions]="{ exact: true }"
         >Home</a
       >
-      <a mat-button routerLink="/products" class="navbar-link" routerLinkActive="active-link"
-        >Products ({{ productCount }})</a
-      >
-      <a mat-button class="navbar-link" routerLink="/admin">Admin</a>
-      <a mat-button class="navbar-link" routerLink="/login">Login</a>
-    </div>
-    <!-- An empty span used purely for flexbox spacing (pushes the search box and cart to the right) -->
-    <!-- a common Material toolbar trick, styled via the "spacer" class in navbar.component.css. -->
+      <a mat-button routerLink="/products" class="navbar-link" routerLinkActive="active-link">
+        Products
+      </a>
+      <a mat-button routerLink="/admin" class="navbar-link" routerLinkActive="active-link">Admin</a>
+    </nav>
+
+    <!-- An empty span used purely for flexbox spacing (pushes the actions to the right) -->
+    <!-- a common Material toolbar trick, styled via the global "spacer" class in styles.css. -->
     <span class="spacer"></span>
-    <!-- matBadge overlays a small counter badge on the button - handy for cart item counts, notifications, etc. -->
-    <a routerLink="/cart">
-      <button
-        mat-icon-button
-        [matBadge]="cartService.itemsCount()"
-        matBadgeColor="accent"
-        aria-label="Cart"
-      >
-        <mat-icon>shopping_cart</mat-icon>
-      </button>
-    </a>
+
+    <div class="navbar-actions">
+      <!-- matBadge overlays a small counter badge on the button - handy for cart item counts, notifications, etc. -->
+      <a routerLink="/cart" class="navbar-icon-link" aria-label="Cart">
+        <button
+          mat-icon-button
+          [matBadge]="cartService.itemsCount()"
+          [matBadgeHidden]="cartService.itemsCount() === 0"
+          matBadgeColor="warn"
+          matBadgeSize="small"
+          class="navbar-link"
+        >
+          <mat-icon>shopping_cart</mat-icon>
+        </button>
+      </a>
+      <a mat-stroked-button routerLink="/login" class="navbar-login">Login</a>
+    </div>
   </div>
+
   @if (loadingService.isLoading()) {
     <mat-progress-bar mode="indeterminate" class="navbar-progress" />
   }
