@@ -41,6 +41,16 @@ export const routes: Routes = [
     loadChildren: () => import('./components/admin/admin.routes').then((m) => m.adminRoutes),
   },
   {
+    path: 'login',
+    loadComponent: () =>
+      import('./components/auth/login/login.component').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'register',
+    loadComponent: () =>
+      import('./components/auth/register/register.component').then((m) => m.RegisterComponent),
+  },
+  {
     path: '**',
     loadComponent: () =>
       import('./shared/components/not-found/not-found.component').then((m) => m.NotFound),

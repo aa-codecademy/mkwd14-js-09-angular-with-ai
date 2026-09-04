@@ -1,0 +1,114 @@
+<div class="container auth-container">
+  <mat-card appearance="outlined">
+    <mat-card-content class="card-content-padded">
+      <div class="auth-header">
+        <mat-icon>spa</mat-icon>
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-subtitle">Join Mango Store today</p>
+      </div>
+
+      <form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)" novalidate>
+        <div class="name-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>First Name</mat-label>
+            <input
+              matInput
+              name="firstName"
+              [(ngModel)]="model.firstName"
+              #firstNameCtrl="ngModel"
+              required
+              minlength="2"
+            />
+            @if (firstNameCtrl.invalid && firstNameCtrl.touched) {
+              <mat-error>First name is required (Min 2 chars)</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Last Name</mat-label>
+            <input
+              matInput
+              name="lastName"
+              [(ngModel)]="model.lastName"
+              #lastNameCtrl="ngModel"
+              required
+              minlength="2"
+            />
+            @if (lastNameCtrl.invalid && lastNameCtrl.touched) {
+              <mat-error>Last name is required (Min 2 chars)</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Email address</mat-label>
+          <mat-icon matPrefix>email</mat-icon>
+          <input
+            type="email"
+            matInput
+            name="email"
+            [(ngModel)]="model.email"
+            #emailCtrl="ngModel"
+            required
+            email
+          />
+          @if (emailCtrl.invalid && emailCtrl.touched) {
+            <mat-error>Email is required in valid format</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Password</mat-label>
+          <mat-icon matPrefix>lock</mat-icon>
+          <input
+            type="password"
+            matInput
+            name="password"
+            [(ngModel)]="model.password"
+            #passwordCtrl="ngModel"
+            required
+          />
+          @if (passwordCtrl.invalid && passwordCtrl.touched) {
+            <mat-error>Password is required (Min. 8 chars)</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Confirm password</mat-label>
+          <mat-icon matPrefix>lock_reset</mat-icon>
+          <input
+            type="password"
+            matInput
+            appMatchPassword
+            [matchTarget]="model.password"
+            name="confirmPassword"
+            [(ngModel)]="model.confirmPassword"
+            #confirmPasswordCtrl="ngModel"
+          />
+          @if (
+            confirmPasswordCtrl.invalid &&
+            confirmPasswordCtrl.touched &&
+            confirmPasswordCtrl.errors?.['passwordMissMatch']
+          ) {
+            <mat-error>Passwords must match</mat-error>
+          }
+        </mat-form-field>
+
+        <button
+          class="submit-button"
+          mat-flat-button
+          color="primary"
+          type="submit"
+          [disabled]="registerForm.invalid"
+        >
+          Create account
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account?
+        <a routerLink="/login">Sign in</a>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -1,4 +1,4 @@
-import { Component, inject, signal, type OnInit } from '@angular/core';
+import { Component, computed, inject, signal, type OnInit } from '@angular/core';
 import {
   FormBuilder,
   ReactiveFormsModule,
@@ -13,15 +13,16 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { Router, RouterLink } from '@angular/router';
-import { delay, map, of, type Observable } from 'rxjs';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { delay, map, of, switchMap, type Observable } from 'rxjs';
 import { AdminProductService } from '../../../shared/services/admin/admin.product.service';
-import type { CreateProduct } from '../../../core/models/product.model';
+import type { CreateOrUpdateProduct } from '../../../core/models/product.model';
 import { NotificationService } from '../../../shared/services/notification.service';
 import { CategoryService } from '../../../shared/services/category.service';
 import type { Category } from '../../../core/models/category.model';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { ProductService } from '../../../shared/services/product.service';
 
 @Component({
   selector: 'app-product-form',
@@ -47,12 +48,17 @@ export class ProductFormComponent implements OnInit {
   // in field initializers (which is exactly why `form` below can already use `this.fb`).
   private fb = inject(FormBuilder);
   adminProductService = inject(AdminProductService);
+  productService = inject(ProductService);
   notificationService = inject(NotificationService);
   categoryService = inject(CategoryService);
   router = inject(Router);
+  activatedRoute = inject(ActivatedRoute);
 
   categories = signal<Category[]>([]);
   primaryImageIndex = signal(0);
+  productId = signal<number | null>(null);
+
+  isEditing = computed(() => typeof this.productId() === 'number');
 
   // A getter, not a field: the FormArray instance can be replaced (reset/patch), so we always
   // read it fresh from the form. Templates can call this safely on every change detection pass.
@@ -91,6 +97,50 @@ export class ProductFormComponent implements OnInit {
     this.form.controls.name.valueChanges.subscribe((name) => {
       this.form.controls.slug.setValue(this.toSlug(name ?? ''));
     });
+
+    this.activatedRoute.paramMap
+      .pipe(
+        map((params) => Number(params.get('id'))),
+        switchMap((id) => this.productService.getById(id)),
+      )
+      .subscribe((product) => {
+        this.productId.set(product.id);
+
+        this.form.patchValue({
+          name: product.name,
+          slug: product.slug,
+          description: product.description,
+          price: product.price,
+          discountPercent: product.discountPercent,
+          stock: product.stock,
+          sku: product.sku,
+          featured: product.featured,
+          categoryId: product.categoryId,
+        });
+
+        this.imagesArray.clear();
+
+        for (const url of product.images) {
+          this.imagesArray.push(this.fb.control(url, { nonNullable: true }));
+        }
+
+        const primaryIndex = this.imagesArray.controls
+          .map((ctrl) => ctrl.value)
+          .indexOf(product.image);
+
+        this.primaryImageIndex.set(primaryIndex);
+      });
+
+    // DO NOT USE SUBSCRIBE INSIDE OF ANOTHER SUBSCRIBE EVER!!!
+    // this.activatedRoute.paramMap.subscribe((params) => {
+    //   const id = params.get('id');
+    //   if (!id) {
+    //     return;
+    //   }
+    //   this.productService.getById(Number(id)).subscribe((product) => {
+    //     console.log(product);
+    //   });
+    // });
   }
 
   removeImage(index: number) {
@@ -100,7 +150,7 @@ export class ProductFormComponent implements OnInit {
 
   addImage() {
     // push() takes a control, not a value - fb.control('') creates a brand new FormControl.
-    this.imagesArray.push(this.fb.control('') as FormControl<string>);
+    this.imagesArray.push(this.fb.control('', { nonNullable: true }));
   }
 
   // An async validator: same signature as a sync one, but returns an Observable/Promise of the
@@ -133,7 +183,7 @@ export class ProductFormComponent implements OnInit {
   submitForm() {
     // form.value only includes ENABLED controls and its type is partial, hence all the ?? fallbacks.
     // Use form.getRawValue() when you also need disabled controls.
-    const body: CreateProduct = {
+    const body: CreateOrUpdateProduct = {
       name: this.form.value.name!,
       slug: this.form.value.slug!,
       description: this.form.value.description!,
@@ -148,17 +198,29 @@ export class ProductFormComponent implements OnInit {
       featured: this.form.value.featured!,
     };
 
-    // HttpClient observables are cold: nothing is sent until subscribe() runs.
-    this.adminProductService.create(body).subscribe({
-      next: (createdProduct) => {
-        this.notificationService.showSuccess(
-          `Product ${createdProduct.name} has been successfully created!`,
-        );
-        // Navigate away only on success - never before the request resolves.
-        this.router.navigate(['/admin']);
-      },
-      // Always handle error, otherwise a failed request becomes an unhandled exception.
-      error: () => this.notificationService.showError('Error while creating the product'),
-    });
+    if (!this.isEditing()) {
+      // HttpClient observables are cold: nothing is sent until subscribe() runs.
+      this.adminProductService.create(body).subscribe({
+        next: (createdProduct) => {
+          this.notificationService.showSuccess(
+            `Product ${createdProduct.name} has been successfully created!`,
+          );
+          // Navigate away only on success - never before the request resolves.
+          this.router.navigate(['/admin']);
+        },
+        // Always handle error, otherwise a failed request becomes an unhandled exception.
+        error: () => this.notificationService.showError('Error while creating the product'),
+      });
+    } else {
+      this.adminProductService.update(body, this.productId()!).subscribe({
+        next: (updatedProduct) => {
+          this.notificationService.showSuccess(
+            `Product ${updatedProduct.name} has been updated successfully!`,
+          );
+          this.router.navigate(['/admin']);
+        },
+        error: () => this.notificationService.showError('Error while updating the product'),
+      });
+    }
   }
 }

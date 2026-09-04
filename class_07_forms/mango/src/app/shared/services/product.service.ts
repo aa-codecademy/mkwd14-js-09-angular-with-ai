@@ -35,10 +35,4 @@ export class ProductService {
   getById(id: number): Observable<Product> {
     return this.httpClient.get<Product>(`${this.apiUrl}/products/${id}`);
   }
-
-  // Note: this doesn't actually send an HTTP POST - it's a placeholder/stub left for a future
-  // exercise. A real implementation would be `this.httpClient.post<Product>(...)`.
-  addProduct(product: Product) {
-    console.log(product);
-  }
 }

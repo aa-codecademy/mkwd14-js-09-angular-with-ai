@@ -1,5 +1,5 @@
 <div class="container form-container">
-  <h1>New Product</h1>
+  <h1>{{ isEditing() ? 'Edit product' : 'New Product' }}</h1>
 
   <!-- [formGroup] binds this <form> to the FormGroup in the class; (ngSubmit) fires on submit
        (button click OR Enter key) - use it instead of (click) on the button so keyboard users work too. -->
@@ -122,7 +122,9 @@
     <div class="actions-row">
       <a mat-stroked-button routerLink="/admin">Cancel</a>
       <!-- Exercise: add [disabled]="form.invalid" here so an incomplete product can't be submitted. -->
-      <button mat-flat-button color="primary" type="submit">Create Product</button>
+      <button mat-flat-button color="primary" type="submit">
+        {{ isEditing() ? 'Update product' : 'Create product' }}
+      </button>
     </div>
   </form>
 </div>
