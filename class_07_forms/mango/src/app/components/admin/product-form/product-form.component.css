@@ -34,8 +34,27 @@
 
 .image-row {
   display: flex;
+  align-items: flex-start;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.image-preview {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  margin-top: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  object-fit: cover;
+  background: #fafafa;
+}
+
+.image-preview-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bbb;
 }
 
 .image-field {
@@ -46,4 +65,21 @@
   display: flex;
   gap: 12px;
   justify-content: flex-end;
+}
+
+.featured-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 20px;
+}
+
+.featured-hint {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.image-preview-primary {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 1px #1976d2;
 }

@@ -2,7 +2,6 @@
 // flowing through the app so components and templates get type-checking and autocomplete.
 export interface Product extends CreateProduct {
   id: number;
-  featured: boolean;
 }
 
 export interface CreateProduct {
@@ -15,5 +14,6 @@ export interface CreateProduct {
   images: string[];
   stock: number;
   sku: string;
-  categoryId: string;
+  categoryId: number;
+  featured: boolean;
 }

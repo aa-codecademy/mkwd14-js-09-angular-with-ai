@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, type OnInit } from '@angular/core';
 import {
   FormBuilder,
   ReactiveFormsModule,
@@ -18,6 +18,10 @@ import { delay, map, of, type Observable } from 'rxjs';
 import { AdminProductService } from '../../../shared/services/admin/admin.product.service';
 import type { CreateProduct } from '../../../core/models/product.model';
 import { NotificationService } from '../../../shared/services/notification.service';
+import { CategoryService } from '../../../shared/services/category.service';
+import type { Category } from '../../../core/models/category.model';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 @Component({
   selector: 'app-product-form',
@@ -31,18 +35,24 @@ import { NotificationService } from '../../../shared/services/notification.servi
     MatIconModule,
     MatCardModule,
     MatSelectModule,
+    MatTooltipModule,
+    MatSlideToggleModule,
     RouterLink,
   ],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.css',
 })
-export class ProductFormComponent {
+export class ProductFormComponent implements OnInit {
   // inject() is the modern alternative to constructor injection - shorter, and it works
   // in field initializers (which is exactly why `form` below can already use `this.fb`).
   private fb = inject(FormBuilder);
   adminProductService = inject(AdminProductService);
   notificationService = inject(NotificationService);
+  categoryService = inject(CategoryService);
   router = inject(Router);
+
+  categories = signal<Category[]>([]);
+  primaryImageIndex = signal(0);
 
   // A getter, not a field: the FormArray instance can be replaced (reset/patch), so we always
   // read it fresh from the form. Templates can call this safely on every change detection pass.
@@ -57,7 +67,9 @@ export class ProductFormComponent {
     // ['', Validators.required, Validators.minLength(3)] silently registers minLength as an
     // *async* validator (3rd slot) and it never runs.
     name: ['', [Validators.required, Validators.minLength(3)]],
+    slug: ['', [Validators.required]],
     description: ['', [Validators.required, Validators.minLength(10)]],
+    categoryId: [null as number | null, Validators.required],
     price: [0, Validators.min(0)],
     // Validators.compose() is just "run these together" - the plain array form does the same thing.
     discountPercent: [0, Validators.compose([Validators.min(0), Validators.max(100)])],
@@ -65,10 +77,21 @@ export class ProductFormComponent {
     // Here the 3rd slot is used on purpose: validateSku returns an Observable, so it is an
     // async validator. .bind(this) keeps `this` pointing at the component when Angular calls it.
     sku: ['', Validators.required, [this.validateSku.bind(this)]],
+    featured: [false],
     // fb.array() builds a FormArray - use it when the NUMBER of controls is dynamic
     // (a list the user can grow/shrink). Use a nested fb.group() when the shape is fixed.
     images: this.fb.array(['https://picsum.photos/seed/product/600/400']),
   });
+
+  ngOnInit(): void {
+    this.categoryService.getAll().subscribe((categories) => {
+      this.categories.set(categories);
+    });
+
+    this.form.controls.name.valueChanges.subscribe((name) => {
+      this.form.controls.slug.setValue(this.toSlug(name ?? ''));
+    });
+  }
 
   removeImage(index: number) {
     // removeAt() mutates the FormArray, and the template's @for re-renders automatically.
@@ -95,21 +118,34 @@ export class ProductFormComponent {
     );
   }
 
+  private toSlug(name: string) {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  setPrimary(index: number) {
+    this.primaryImageIndex.set(index);
+  }
+
   submitForm() {
     // form.value only includes ENABLED controls and its type is partial, hence all the ?? fallbacks.
     // Use form.getRawValue() when you also need disabled controls.
     const body: CreateProduct = {
-      name: this.form.value.name ?? '',
-      slug: (this.form.value.name ?? '').toLowerCase().replace(' ', '-'),
-      description: this.form.value.description ?? '',
-      price: this.form.value.price ?? 0,
-      discountPercent: this.form.value.discountPercent ?? 0,
+      name: this.form.value.name!,
+      slug: this.form.value.slug!,
+      description: this.form.value.description!,
+      price: this.form.value.price!,
+      discountPercent: this.form.value.discountPercent!,
       // The API wants a single main image plus the full list, so we reuse the first array entry.
-      image: this.form.value.images?.[0] ?? '',
+      image: this.form.value.images?.[this.primaryImageIndex()]!,
       images: (this.form.value.images || []).filter((image) => typeof image === 'string'),
-      stock: this.form.value.stock ?? 0,
-      sku: this.form.value.sku ?? '',
-      categoryId: '1',
+      stock: this.form.value.stock!,
+      sku: this.form.value.sku!,
+      categoryId: this.form.value.categoryId!,
+      featured: this.form.value.featured!,
     };
 
     // HttpClient observables are cold: nothing is sent until subscribe() runs.

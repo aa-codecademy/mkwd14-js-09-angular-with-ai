@@ -14,9 +14,27 @@
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width-field">
+      <mat-label>Slug</mat-label>
+      <input matInput formControlName="slug" readonly />
+      <mat-hint>Generated from the product name</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width-field">
       <mat-label>Description</mat-label>
       <input type="text" matInput formControlName="description" />
       <mat-error>Description is required (min 10 characters)</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width-field">
+      <mat-label>Category</mat-label>
+      <mat-select formControlName="categoryId">
+        @for (category of categories(); track category.id) {
+          <mat-option [value]="category.id">
+            {{ category.name }}
+          </mat-option>
+        }
+      </mat-select>
+      <mat-error>Category is required, pick one category</mat-error>
     </mat-form-field>
 
     <div class="number-grid">
@@ -53,6 +71,11 @@
       }
     </mat-form-field>
 
+    <div class="featured-row">
+      <mat-slide-toggle formControlName="featured"> Featured product </mat-slide-toggle>
+      <span class="featured-hint">Featured products show up on the home page.</span>
+    </div>
+
     <!-- formArrayName opens a "scope" for the images FormArray - every control inside is addressed
          by its index rather than by a name. -->
     <div formArrayName="images" class="images-array">
@@ -61,6 +84,21 @@
            Tracking $index instead would make Angular reuse the wrong DOM node after a removal. -->
       @for (ctrl of imagesArray.controls; track ctrl) {
         <div class="image-row">
+          <img
+            [class.image-preview-primary]="$index === primaryImageIndex()"
+            class="image-preview"
+            [src]="ctrl.value"
+            alt="preview for image"
+          />
+          <button
+            mat-icon-button
+            type="button"
+            (click)="setPrimary($index)"
+            [color]="$index === primaryImageIndex() ? 'primary' : undefined"
+            [matTooltip]="$index === primaryImageIndex() ? 'Primary image' : 'Set image as primary'"
+          >
+            <mat-icon>{{ $index === primaryImageIndex() ? 'star' : 'star_border' }}</mat-icon>
+          </button>
           <mat-form-field appearance="outline" class="image-field">
             <mat-label>Image URL {{ $index + 1 }}</mat-label>
             <!-- [formControl]="ctrl" passes the control INSTANCE (note the brackets).
