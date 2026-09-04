@@ -11,6 +11,11 @@
         <div class="name-fields-grid input-margin-bottom">
           <!-- mat-form-field + matInput is Angular Material's wrapper around a native input -
                formControlName still binds it to the FormGroup exactly like a plain input. -->
+          <!-- Note there's no @if around <mat-error> here: mat-form-field shows it
+               only when the control is invalid AND touched, so Material does the
+               job the @if blocks do in the login/register templates. The trade-off
+               is you can't tell WHICH validator failed - use @if + errors?.['...']
+               when a field has several rules and needs different messages. -->
           <mat-form-field appearance="outline">
             <mat-label>First name</mat-label>
             <input type="text" matInput formControlName="firstName" />
@@ -55,6 +60,9 @@
         </mat-form-field>
 
         <div class="step-action-row">
+          <!-- matStepperNext advances the stepper. Combined with [linear]="true" and
+               [stepControl] above, it stays disabled until addressForm is valid -
+               no click handler and no manual index tracking needed. -->
           <button mat-flat-button color="primary" matStepperNext>Continue to Payment</button>
         </div>
       </form>

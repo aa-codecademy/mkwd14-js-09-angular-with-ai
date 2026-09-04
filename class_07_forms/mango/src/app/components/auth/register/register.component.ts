@@ -22,6 +22,9 @@ import { MatchPasswordDirective } from '../../../shared/directives/match-passwor
     MatAnchor,
     MatButtonModule,
     RouterLink,
+    // A custom validator directive still has to be imported like any other
+    // standalone directive, or `appMatchPassword` in the template does nothing
+    // and fails SILENTLY - no error, the form just always looks valid.
     MatchPasswordDirective,
   ],
   templateUrl: './register.component.html',
@@ -32,6 +35,8 @@ export class RegisterComponent {
   private notificationService = inject(NotificationService);
   private router = inject(Router);
 
+  // One plain object holds the whole template-driven form. Note confirmPassword
+  // lives here too but is never sent to the server - it exists only to validate.
   model = {
     firstName: '',
     lastName: '',
@@ -41,11 +46,15 @@ export class RegisterComponent {
   };
 
   onSubmit(form: NgForm) {
+    // Handy while learning: log the NgForm and inspect .value, .valid, .controls.
+    // Remember to delete console.logs before you ship.
     console.log('🚀 ~ RegisterComponent ~ onSubmit ~ form:', form);
     if (form.invalid) {
       return;
     }
 
+    // Build the request body explicitly instead of sending `this.model` - that
+    // would leak confirmPassword to the API. A typed DTO catches this for you.
     const body: Register = {
       firstName: this.model.firstName,
       lastName: this.model.lastName,

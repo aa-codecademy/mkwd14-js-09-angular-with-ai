@@ -21,6 +21,11 @@ import { FormsModule, type NgForm } from '@angular/forms';
              reads them and produces the errors object below. -->
         <!-- #emailCtrl="ngModel" exposes this control's own NgModel instance so we can check
              its validity/touched state locally in the template. -->
+        <!-- Bare ngModel (no banana-in-a-box brackets) registers the control with the
+             form but does NOT bind to a class property. Use [(ngModel)]="model.email"
+             only when you actually need the value in a field of your own.
+             Careful: never put a backtick in a comment inside an inline template -
+             it ends the template literal and the whole component stops compiling. -->
         <input type="email" name="email" ngModel required email #emailCtrl="ngModel" />
 
         <!-- Only show errors once the user has interacted with the field (touched) -
@@ -58,6 +63,8 @@ import { FormsModule, type NgForm } from '@angular/forms';
       </div>
       <!-- loginForm.invalid reflects the combined validity of every ngModel control inside it -->
       <button type="submit" [disabled]="loginForm.invalid">Login</button>
+      <!-- status is the string version of valid/invalid: 'VALID' | 'INVALID' |
+           'PENDING' (an async validator is still running) | 'DISABLED'. -->
       <p>Form Status: {{ loginForm.status }}</p>
     </form>
   `,
@@ -74,6 +81,8 @@ export class App {
   // NgForm gives you the whole form's live value/status - handy since template-driven
   // forms don't build a FormGroup by hand like reactive forms do.
   onSubmit(form: NgForm) {
+    // form.value is an object keyed by the name="..." attributes:
+    // { email: '...', password: '...' }. That's why the names matter.
     console.log(form.value);
   }
 }

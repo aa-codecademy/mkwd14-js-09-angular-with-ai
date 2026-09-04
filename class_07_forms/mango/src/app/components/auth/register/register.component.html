@@ -7,10 +7,15 @@
         <p class="auth-subtitle">Join Mango Store today</p>
       </div>
 
+      <!-- Same template-driven setup as the login form: NgForm exposed as
+           #registerForm, submitted via (ngSubmit), browser validation off. -->
       <form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)" novalidate>
         <div class="name-grid">
           <mat-form-field appearance="outline">
             <mat-label>First Name</mat-label>
+            <!-- minlength as an attribute = Angular's MinLengthValidator.
+                 Careful: minlength only kicks in once there's a value, which is
+                 exactly why you still need `required` next to it. -->
             <input
               matInput
               name="firstName"
@@ -76,6 +81,9 @@
         <mat-form-field appearance="outline" class="full-width-field">
           <mat-label>Confirm password</mat-label>
           <mat-icon matPrefix>lock_reset</mat-icon>
+          <!-- appMatchPassword is our own directive; [matchTarget] feeds it the
+               password to compare against. Note there is NO `required` here -
+               the mismatch check is the only rule on this field. -->
           <input
             type="password"
             matInput
@@ -85,6 +93,9 @@
             [(ngModel)]="model.confirmPassword"
             #confirmPasswordCtrl="ngModel"
           />
+          <!-- errors?.['passwordMissMatch'] matches the exact key the directive
+               returns. Use the ?. and bracket syntax: errors is null when the
+               control is valid, and the key isn't a known property. -->
           @if (
             confirmPasswordCtrl.invalid &&
             confirmPasswordCtrl.touched &&
@@ -94,6 +105,8 @@
           }
         </mat-form-field>
 
+        <!-- registerForm.invalid is true if ANY child control is invalid,
+             including our custom mismatch rule - the parent aggregates them. -->
         <button
           class="submit-button"
           mat-flat-button

@@ -30,7 +30,10 @@
         <p class="error">Email is required</p>
       }
 
-      @if (f['name'].errors?.['email']) {
+      <!-- Was f['name'] here - a copy-paste slip that silently shows/hides the
+           wrong message. This is exactly the risk of string-keyed controls: the
+           compiler can't catch it, so proofread every f['...'] you paste. -->
+      @if (f['email'].errors?.['email']) {
         <p class="error">Email must be of valid email format</p>
       }
     }
@@ -59,6 +62,9 @@
       }
     }
 
+    <!-- form.errors, not f['confirmPassword'].errors: a CROSS-FIELD validator runs
+         on the FormGroup (it needs to see both fields), so the error lands on the
+         PARENT. Looking for it on the child control finds nothing. -->
     @if (
       form.errors?.['passwordsMismatch'] &&
       f['confirmPassword'].valid &&
@@ -78,6 +84,8 @@
     @for (ctrl of phones.controls; track ctrl) {
       <div>
         <input type="tel" [formControl]="ctrl" />
+        <!-- type="button" is essential: a <button> inside a <form> defaults to
+             type="submit", so without it every "Remove" click submits the form. -->
         <button
           type="button"
           [disabled]="phones.controls.length <= 1"
@@ -89,6 +97,8 @@
     }
     <button type="button" (click)="addPhone()">Add Phone Number</button>
   </div>
+  <!-- form.invalid is true while a cross-field error sits on the group, even
+       when every individual control is valid. -->
   <button type="submit" [disabled]="form.invalid">Register</button>
   <p>Form Status: {{ form.status }}</p>
 </form>

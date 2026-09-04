@@ -7,10 +7,19 @@
         <p class="auth-subtitle">Welcomer back to Mango</p>
       </div>
 
+      <!-- #loginForm="ngForm" grabs the NgForm directive Angular auto-attaches to
+           every <form>. That gives you .valid/.invalid/.touched/.value for free.
+           (ngSubmit) - NOT (click) on the button - so Enter-to-submit also works.
+           novalidate turns OFF the browser's own bubbles so Angular owns validation. -->
       <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" novalidate>
         <mat-form-field appearance="outline" class="full-width-field">
           <mat-label>Email address</mat-label>
           <mat-icon matPrefix>email</mat-icon>
+          <!-- name="email" is REQUIRED: NgForm registers controls by their name
+               attribute. Forget it and you get a runtime error.
+               #emailCtrl="ngModel" exposes THIS control's state to the template.
+               `required` and `email` are validator directives, not plain HTML
+               attributes - Angular reads them and builds the validators. -->
           <input
             type="email"
             matInput
@@ -20,6 +29,8 @@
             required
             email
           />
+          <!-- `&& touched` is the whole trick: without it every field screams
+               "required" the instant the page loads, before the user typed anything. -->
           @if (emailCtrl.invalid && emailCtrl.touched) {
             <mat-error>Email is required in valid format</mat-error>
           }
@@ -28,6 +39,8 @@
         <mat-form-field appearance="outline" class="full-width-field">
           <mat-label>Password</mat-label>
           <mat-icon matPrefix>lock</mat-icon>
+          <!-- Gotcha: the message below promises "Min. 8 chars" but only `required`
+               is applied here. Add minlength="8" or the rule is never enforced. -->
           <input
             type="password"
             matInput
@@ -41,6 +54,8 @@
           }
         </mat-form-field>
 
+        <!-- [disabled] reads the NgForm's own state, so there's no extra
+             "isFormValid" flag to keep in sync by hand. -->
         <button
           class="submit-button"
           mat-flat-button

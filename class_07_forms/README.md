@@ -11,6 +11,7 @@ Forms are how your app collects data from a human — logins, registrations, che
   - [FormBuilder](#formbuilder)
   - [Validators (sync)](#validators-sync)
   - [Custom & Cross-field Validators](#custom--cross-field-validators)
+  - [Custom Validator Directives (template-driven)](#custom-validator-directives-template-driven)
   - [FormArray](#formarray)
   - [Form State: valid, touched, dirty, status](#form-state-valid-touched-dirty-status)
   - [valueChanges & Reactivity](#valuechanges--reactivity)
@@ -30,15 +31,13 @@ Forms are how your app collects data from a human — logins, registrations, che
 **Why it exists:** it's the most approachable way to wire up a form — great for simple forms where you don't need much programmatic control, and it feels close to plain HTML.
 
 ```typescript
-import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component } from "@angular/core";
+import { FormsModule } from "@angular/forms";
 
 @Component({
-  selector: 'app-signup',
+  selector: "app-signup",
   imports: [FormsModule],
-  template: `
-    <input name="username" ngModel required minlength="3" />
-  `,
+  template: ` <input name="username" ngModel required minlength="3" /> `,
 })
 export class Signup {}
 ```
@@ -53,7 +52,7 @@ export class Signup {}
 
 ```typescript
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   imports: [FormsModule], // required, or ngModel binds to nothing and fails silently
   template: `<input ngModel name="q" />`,
 })
@@ -67,11 +66,16 @@ In reactive forms, you build the form model yourself in the component class: a `
 **Why it exists:** the form's shape, validators, and state live in testable TypeScript, not scattered across template attributes. This scales much better for complex forms and lets you unit-test form logic without rendering anything.
 
 ```typescript
-import { Component } from '@angular/core';
-import { FormGroup, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component } from "@angular/core";
+import {
+  FormGroup,
+  FormControl,
+  ReactiveFormsModule,
+  Validators,
+} from "@angular/forms";
 
 @Component({
-  selector: 'app-login',
+  selector: "app-login",
   imports: [ReactiveFormsModule],
   template: `
     <form [formGroup]="form">
@@ -81,7 +85,7 @@ import { FormGroup, FormControl, ReactiveFormsModule, Validators } from '@angula
 })
 export class Login {
   form = new FormGroup({
-    email: new FormControl('', Validators.required),
+    email: new FormControl("", Validators.required),
   });
 }
 ```
@@ -119,16 +123,50 @@ When the built-ins aren't enough (e.g. "passwords must match"), you write your o
 
 ```typescript
 function passwordsMatch(group: AbstractControl): ValidationErrors | null {
-  const a = group.get('password')?.value;
-  const b = group.get('confirmPassword')?.value;
+  const a = group.get("password")?.value;
+  const b = group.get("confirmPassword")?.value;
   return a === b ? null : { passwordsMismatch: true };
 }
 
 form = this.fb.group(
-  { password: [''], confirmPassword: [''] },
+  { password: [""], confirmPassword: [""] },
   { validators: passwordsMatch },
 );
 ```
+
+### Custom Validator Directives (template-driven)
+
+A plain validator _function_ works great in a reactive form, but a template-driven form has no TypeScript model to attach it to — you only have HTML attributes. So you wrap the rule in a **directive** and register it into `NG_VALIDATORS`, Angular's collection of validators. Now `appMatchPassword` in your markup behaves exactly like the built-in `required`.
+
+**Why it exists:** it's the bridge between "validation as code" and "validation as an attribute". Angular scans the element's directives for anything provided under `NG_VALIDATORS` and folds them into the control's validator list alongside `required`, `email`, and friends.
+
+```typescript
+@Directive({
+  selector: "[appMatchPassword]",
+  // multi: true APPENDS to the validator list. Leave it out and you REPLACE
+  // the whole list, silently killing required/email on that control.
+  providers: [
+    {
+      provide: NG_VALIDATORS,
+      useExisting: MatchPasswordDirective,
+      multi: true,
+    },
+  ],
+})
+export class MatchPasswordDirective implements Validator {
+  @Input() matchTarget = "";
+
+  validate(control: AbstractControl): ValidationErrors | null {
+    return control.value === this.matchTarget
+      ? null
+      : { passwordMissMatch: true };
+  }
+}
+```
+
+> **Note:** `useExisting` (not `useClass`) matters — you want the _same instance_ Angular created for the element, because that's the one whose `@Input()` values are filled in.
+
+> **Gotcha:** `validate()` only re-runs when **its own** control changes. Edit the first password box after typing the confirmation and the error goes stale. See [Mini Example 7](#mini-examples) for the `registerOnValidatorChange` fix.
 
 ### FormArray
 
@@ -147,7 +185,7 @@ addPhone() {
 ```html
 <div formArrayName="phones">
   @for (ctrl of phones.controls; track ctrl) {
-    <input [formControl]="ctrl" />
+  <input [formControl]="ctrl" />
   }
 </div>
 ```
@@ -160,11 +198,11 @@ Every control (and the form as a whole) tracks state flags: `valid`/`invalid`, `
 
 ```html
 @if (emailCtrl.invalid && emailCtrl.touched) {
-  <p class="error">Email is required</p>
+<p class="error">Email is required</p>
 }
 ```
 
-> **Note:** `markAsTouched()` can be called manually — handy for surfacing an error on a *related* field, like flagging the password field the moment the user focuses "confirm password".
+> **Note:** `markAsTouched()` can be called manually — handy for surfacing an error on a _related_ field, like flagging the password field the moment the user focuses "confirm password".
 
 ### valueChanges & Reactivity
 
@@ -173,7 +211,7 @@ Every `FormControl`, `FormGroup`, and `FormArray` exposes a `valueChanges` Obser
 **Why it exists:** this is the "reactive" in reactive forms — you can `.subscribe()` to build live previews, trigger async validation, debounce a search box, or sync derived state, all without a manual `(input)` event handler.
 
 ```typescript
-this.form.get('name')!.valueChanges.subscribe((value) => {
+this.form.get("name")!.valueChanges.subscribe((value) => {
   this.namePreview = value;
 });
 ```
@@ -202,9 +240,38 @@ validateSku(control: AbstractControl): Observable<{ skuTaken: boolean } | null> 
 
 ## The mango app: where forms show up
 
-The `mango` e-commerce app now has two real reactive forms, and it's worth reading them side by side.
+The `mango` e-commerce app now has forms of **both** kinds, and it's worth reading them side by side.
 
-**1. Checkout — a form gating a Material stepper** (`src/app/components/checkout/`)
+**1. Login & Register — template-driven, with a custom validator directive** (`src/app/components/auth/`)
+
+These two are the template-driven half of the class in a real app. There's no `FormGroup` anywhere — just a plain `model` object, `[(ngModel)]` on each input, and `#ctrl="ngModel"` template refs to read each control's state:
+
+```html
+<form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)" novalidate>
+  <input
+    name="email"
+    [(ngModel)]="model.email"
+    #emailCtrl="ngModel"
+    required
+    email
+  />
+  @if (emailCtrl.invalid && emailCtrl.touched) {
+  <mat-error>Email is required in valid format</mat-error>
+  }
+</form>
+```
+
+The confirm-password field is where it gets interesting — it uses our own `MatchPasswordDirective` (`src/app/shared/directives/`), fed the value to compare via `[matchTarget]="model.password"`. Three things to notice:
+
+| Detail                                                | Why it matters                                                                                |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `name="..."` on every input                           | `NgForm` registers controls **by name attribute**. Omit it and `ngModel` throws at runtime.   |
+| `&& touched` in every `@if`                           | Without it, every field shows "required" the instant the page loads.                          |
+| `MatchPasswordDirective` in the component's `imports` | A custom directive that isn't imported fails **silently** — the form just always looks valid. |
+
+`onSubmit()` builds an explicit `Register` body rather than sending `this.model`, so `confirmPassword` never leaves the browser. Let the DTO type enforce that for you.
+
+**2. Checkout — a form gating a Material stepper** (`src/app/components/checkout/`)
 
 `[stepControl]="addressForm"` hands the whole `FormGroup` to a `mat-step`. The step refuses to advance while the group is invalid, so you get "you can't continue until this is filled in" without writing a single condition yourself.
 
@@ -219,57 +286,67 @@ The `mango` e-commerce app now has two real reactive forms, and it's worth readi
 
 The control names in `addressForm` match the `ShippingAddress` interface key-for-key, which is why `placeOrder()` can pass `this.addressForm.value` straight into the request body. Design your forms to mirror your API models and this conversion step disappears.
 
-**2. Admin product form — FormArray + async validation** (`src/app/components/admin/product-form/`)
+**3. Admin product form — FormArray + async validation** (`src/app/components/admin/product-form/`)
 
 This one combines almost everything from the class: sync validators, a `compose()`d pair, an async SKU check, and a `FormArray` of image URLs the user can grow and shrink.
 
 ```typescript
 form = this.fb.group({
-  name: ['', [Validators.required, Validators.minLength(3)]],
-  discountPercent: [0, Validators.compose([Validators.min(0), Validators.max(100)])],
-  sku: ['', Validators.required, [this.validateSku.bind(this)]], // async slot
-  images: this.fb.array(['https://picsum.photos/seed/product/600/400']),
+  name: ["", [Validators.required, Validators.minLength(3)]],
+  discountPercent: [
+    0,
+    Validators.compose([Validators.min(0), Validators.max(100)]),
+  ],
+  sku: ["", Validators.required, [this.validateSku.bind(this)]], // async slot
+  images: this.fb.array(["https://picsum.photos/seed/product/600/400"]),
 });
 ```
 
 Three details in that template are easy to get wrong:
 
-| Detail | Why it matters |
-|---|---|
-| `type="button"` on the delete/add buttons | Inside a `<form>`, buttons default to `type="submit"` — without it, "Add image" submits the form. |
-| `track ctrl` in the `@for` | Tracking the control instance keeps rows stable; tracking `$index` makes Angular reuse the wrong DOM node after a removal. |
-| `[formControl]="ctrl"` (brackets) vs `formControlName="name"` (no brackets) | Inside a `FormArray` there are no names — you bind the control **instance**, so you need the brackets. |
+| Detail                                                                      | Why it matters                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `type="button"` on the delete/add buttons                                   | Inside a `<form>`, buttons default to `type="submit"` — without it, "Add image" submits the form.                                                                                                                                                                                                            |
+| `track ctrl` in the `@for`                                                  | Tracking the control instance keeps rows stable; tracking `$index` makes Angular reuse the wrong DOM node after a removal.                                                                                                                                                                                   |
+| `[formControl]="ctrl"` (brackets) vs `formControlName="name"` (no brackets) | Inside a `FormArray` there are no names — you bind the control **instance**, so you need the brackets.                                                                                                                                                                                                       |
+| `<mat-select formControlName="categoryId">`                                 | A `<mat-select>` isn't an `<input>` at all. It plugs into the form because it implements **`ControlValueAccessor`** — the interface any component must implement to be driven by a form control. `[value]` on each `<mat-option>` decides what lands in the form value (here the numeric id, not the label). |
 
 **Supporting pieces worth a look:** `NotificationService` wraps `MatSnackBar` so no component repeats toast config; `AdminProductService` keeps write operations separate from the read-only `ProductService`; and `CreateProduct`/`CreateOrder` are deliberately smaller than `Product`/`Order` — the client sends ids and quantities, and the **server** computes totals so a price can't be faked from the browser.
 
 ## Theory
 
-- **Template-driven vs reactive — the real philosophical difference**: template-driven forms are *asynchronous* and *implicit* — Angular builds the `FormControl`/`NgForm` tree for you behind the scenes as it processes the template, so the model isn't fully available until change detection runs. Reactive forms are *synchronous* and *explicit* — you construct the entire `FormGroup` tree upfront in TypeScript, so it exists and is fully typed/testable before the template ever renders. Pick reactive forms once a form has real complexity (dynamic fields, cross-field rules, unit tests); template-driven forms are fine for small, simple forms.
-- **The control hierarchy**: `AbstractControl` is the abstract base class for all three concrete types — `FormControl` (a single value), `FormGroup` (a fixed set of named child controls), and `FormArray` (an ordered, resizable list of child controls). Validity, value, and state (touched/dirty) all bubble up the tree — a `FormGroup` is invalid if *any* child control is invalid, which is why you can check `form.invalid` once instead of checking every field.
+- **Template-driven vs reactive — the real philosophical difference**: template-driven forms are _asynchronous_ and _implicit_ — Angular builds the `FormControl`/`NgForm` tree for you behind the scenes as it processes the template, so the model isn't fully available until change detection runs. Reactive forms are _synchronous_ and _explicit_ — you construct the entire `FormGroup` tree upfront in TypeScript, so it exists and is fully typed/testable before the template ever renders. Pick reactive forms once a form has real complexity (dynamic fields, cross-field rules, unit tests); template-driven forms are fine for small, simple forms.
+- **The control hierarchy**: `AbstractControl` is the abstract base class for all three concrete types — `FormControl` (a single value), `FormGroup` (a fixed set of named child controls), and `FormArray` (an ordered, resizable list of child controls). Validity, value, and state (touched/dirty) all bubble up the tree — a `FormGroup` is invalid if _any_ child control is invalid, which is why you can check `form.invalid` once instead of checking every field.
 - **Change detection and forms**: template-driven forms rely on Angular's change detection to notice `ngModel` updates (traditionally via zone.js patching input events); reactive forms don't need change detection to update their own state at all — `valueChanges`/`statusChanges` are plain RxJS streams updated synchronously the moment `.setValue()` or a user keystroke changes a control, independent of when a re-render happens.
-- **Sync vs async validators**: the validators you've seen so far (`Validators.required`, your own functions) run synchronously and block form submission immediately. Angular also supports *async validators* (return an `Observable`/`Promise` of errors) for things like "check if this username is already taken" against a server — these set the control's status to `'PENDING'` while in flight, and you generally debounce them so you're not hitting the server on every keystroke.
+- **Sync vs async validators**: the validators you've seen so far (`Validators.required`, your own functions) run synchronously and block form submission immediately. Angular also supports _async validators_ (return an `Observable`/`Promise` of errors) for things like "check if this username is already taken" against a server — these set the control's status to `'PENDING'` while in flight, and you generally debounce them so you're not hitting the server on every keystroke.
 - **updateOn**: by default, reactive form controls validate and emit `valueChanges` on every keystroke (`updateOn: 'change'`). You can configure `updateOn: 'blur'` or `'submit'` per control or for the whole form to avoid expensive/noisy validation running constantly — especially useful for async validators.
 
 ## Useful Links
 
-| Topic | Link |
-|---|---|
-| Forms overview | [angular.dev/guide/forms](https://angular.dev/guide/forms) |
-| Reactive forms | [angular.dev/guide/forms/reactive-forms](https://angular.dev/guide/forms/reactive-forms) |
-| Template-driven forms | [angular.dev/guide/forms/template-driven-forms](https://angular.dev/guide/forms/template-driven-forms) |
-| Form validation | [angular.dev/guide/forms/form-validation](https://angular.dev/guide/forms/form-validation) |
-| Dynamic forms (FormArray) | [angular.dev/guide/forms/dynamic-forms](https://angular.dev/guide/forms/dynamic-forms) |
-| `FormGroup` API | [angular.dev/api/forms/FormGroup](https://angular.dev/api/forms/FormGroup) |
-| `FormControl` API | [angular.dev/api/forms/FormControl](https://angular.dev/api/forms/FormControl) |
-| `FormArray` API | [angular.dev/api/forms/FormArray](https://angular.dev/api/forms/FormArray) |
-| `Validators` API | [angular.dev/api/forms/Validators](https://angular.dev/api/forms/Validators) |
-| Angular Material form field | [material.angular.dev/components/form-field/overview](https://material.angular.dev/components/form-field/overview) |
-| Angular Material stepper | [material.angular.dev/components/stepper/overview](https://material.angular.dev/components/stepper/overview) |
-| `AsyncValidatorFn` API | [angular.dev/api/forms/AsyncValidatorFn](https://angular.dev/api/forms/AsyncValidatorFn) |
-| `FormBuilder` API | [angular.dev/api/forms/FormBuilder](https://angular.dev/api/forms/FormBuilder) |
-| Material snack bar (notifications) | [material.angular.dev/components/snack-bar/overview](https://material.angular.dev/components/snack-bar/overview) |
-| Lazy loading child routes | [angular.dev/guide/routing/common-router-tasks#lazy-loading](https://angular.dev/guide/routing/common-router-tasks) |
-| RxJS Observables (for `valueChanges`) | [rxjs.dev/guide/observable](https://rxjs.dev/guide/observable) |
+| Topic                                    | Link                                                                                                                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Forms overview                           | [angular.dev/guide/forms](https://angular.dev/guide/forms)                                                          |
+| Reactive forms                           | [angular.dev/guide/forms/reactive-forms](https://angular.dev/guide/forms/reactive-forms)                            |
+| Template-driven forms                    | [angular.dev/guide/forms/template-driven-forms](https://angular.dev/guide/forms/template-driven-forms)              |
+| Form validation                          | [angular.dev/guide/forms/form-validation](https://angular.dev/guide/forms/form-validation)                          |
+| Dynamic forms (FormArray)                | [angular.dev/guide/forms/dynamic-forms](https://angular.dev/guide/forms/dynamic-forms)                              |
+| `FormGroup` API                          | [angular.dev/api/forms/FormGroup](https://angular.dev/api/forms/FormGroup)                                          |
+| `FormControl` API                        | [angular.dev/api/forms/FormControl](https://angular.dev/api/forms/FormControl)                                      |
+| `FormArray` API                          | [angular.dev/api/forms/FormArray](https://angular.dev/api/forms/FormArray)                                          |
+| `Validators` API                         | [angular.dev/api/forms/Validators](https://angular.dev/api/forms/Validators)                                        |
+| Angular Material form field              | [material.angular.dev/components/form-field/overview](https://material.angular.dev/components/form-field/overview)  |
+| Angular Material stepper                 | [material.angular.dev/components/stepper/overview](https://material.angular.dev/components/stepper/overview)        |
+| `AsyncValidatorFn` API                   | [angular.dev/api/forms/AsyncValidatorFn](https://angular.dev/api/forms/AsyncValidatorFn)                            |
+| `FormBuilder` API                        | [angular.dev/api/forms/FormBuilder](https://angular.dev/api/forms/FormBuilder)                                      |
+| `NG_VALIDATORS` token                    | [angular.dev/api/forms/NG_VALIDATORS](https://angular.dev/api/forms/NG_VALIDATORS)                                  |
+| `Validator` interface (for directives)   | [angular.dev/api/forms/Validator](https://angular.dev/api/forms/Validator)                                          |
+| `NgForm` API (template-driven)           | [angular.dev/api/forms/NgForm](https://angular.dev/api/forms/NgForm)                                                |
+| `NgModel` API                            | [angular.dev/api/forms/NgModel](https://angular.dev/api/forms/NgModel)                                              |
+| `ControlValueAccessor` (custom controls) | [angular.dev/api/forms/ControlValueAccessor](https://angular.dev/api/forms/ControlValueAccessor)                    |
+| Angular Material select                  | [material.angular.dev/components/select/overview](https://material.angular.dev/components/select/overview)          |
+| Material snack bar (notifications)       | [material.angular.dev/components/snack-bar/overview](https://material.angular.dev/components/snack-bar/overview)    |
+| Lazy loading child routes                | [angular.dev/guide/routing/common-router-tasks#lazy-loading](https://angular.dev/guide/routing/common-router-tasks) |
+| RxJS Observables (for `valueChanges`)    | [rxjs.dev/guide/observable](https://rxjs.dev/guide/observable)                                                      |
 
 ## Mini Examples
 
@@ -277,7 +354,7 @@ Three details in that template are easy to get wrong:
 
 ```typescript
 @Component({
-  selector: 'app-search',
+  selector: "app-search",
   imports: [FormsModule],
   template: `
     <input [(ngModel)]="query" name="query" placeholder="Search..." />
@@ -285,7 +362,7 @@ Three details in that template are easy to get wrong:
   `,
 })
 export class Search {
-  query = '';
+  query = "";
 }
 ```
 
@@ -294,15 +371,15 @@ export class Search {
 ```typescript
 function uniqueUsername(usersApi: UsersApi): AsyncValidatorFn {
   return (control) =>
-    usersApi.isTaken(control.value).pipe(
-      map((taken) => (taken ? { usernameTaken: true } : null)),
-    );
+    usersApi
+      .isTaken(control.value)
+      .pipe(map((taken) => (taken ? { usernameTaken: true } : null)));
 }
 
-username = new FormControl('', {
+username = new FormControl("", {
   validators: [Validators.required],
   asyncValidators: [uniqueUsername(this.usersApi)],
-  updateOn: 'blur', // don't hit the server on every keystroke
+  updateOn: "blur", // don't hit the server on every keystroke
 });
 ```
 
@@ -328,7 +405,7 @@ ngOnInit() {
 ```html
 <div formArrayName="skills">
   @for (skill of skills.controls; track skill) {
-    <input [formControl]="skill" />
+  <input [formControl]="skill" />
   }
 </div>
 <button type="button" (click)="skills.push(fb.control(''))">Add skill</button>
@@ -337,16 +414,17 @@ ngOnInit() {
 **5. A debounced async validator that doesn't hammer the API**
 
 ```typescript
-sku = new FormControl('', {
+sku = new FormControl("", {
   validators: [Validators.required],
   asyncValidators: [
-    (ctrl) => this.api.isSkuTaken(ctrl.value).pipe(
-      debounceTime(400), // wait for a pause in typing
-      map((taken) => (taken ? { skuTaken: true } : null)),
-      first(),           // async validators must COMPLETE, or the control stays PENDING forever
-    ),
+    (ctrl) =>
+      this.api.isSkuTaken(ctrl.value).pipe(
+        debounceTime(400), // wait for a pause in typing
+        map((taken) => (taken ? { skuTaken: true } : null)),
+        first(), // async validators must COMPLETE, or the control stays PENDING forever
+      ),
   ],
-  updateOn: 'blur',
+  updateOn: "blur",
 });
 ```
 
@@ -355,28 +433,81 @@ sku = new FormControl('', {
 ```html
 <input matInput formControlName="sku" />
 @if (form.get('sku')?.pending) {
-  <mat-hint>Checking availability…</mat-hint>
+<mat-hint>Checking availability…</mat-hint>
 } @else if (form.get('sku')?.errors?.['skuTaken']) {
-  <mat-error>SKU is already taken</mat-error>
+<mat-error>SKU is already taken</mat-error>
+}
+```
+
+**7. Re-validating a cross-field directive when the _other_ field changes**
+
+```typescript
+// Fixes the stale-error gotcha in MatchPasswordDirective.
+export class MatchPasswordDirective implements Validator, OnChanges {
+  @Input() matchTarget = "";
+  private notifyAngular = () => {};
+
+  // Angular hands you a callback to call whenever the RULE itself changes.
+  registerOnValidatorChange(fn: () => void) {
+    this.notifyAngular = fn;
+  }
+
+  ngOnChanges() {
+    this.notifyAngular(); // matchTarget changed -> re-run validate()
+  }
+
+  validate(control: AbstractControl): ValidationErrors | null {
+    return control.value === this.matchTarget
+      ? null
+      : { passwordMissMatch: true };
+  }
+}
+```
+
+**8. Marking everything touched so errors actually appear on submit**
+
+```typescript
+submitForm() {
+  if (this.form.invalid) {
+    // Without this, a user who clicks Submit without touching anything sees
+    // a form that refuses to submit and shows NO errors explaining why.
+    this.form.markAllAsTouched();
+    return;
+  }
+  this.save(this.form.value);
 }
 ```
 
 ## Practice Exercises
 
 **Beginner**
+
 - Build a template-driven "contact me" form with `name`, `email`, and `message` fields, each `required`, and show an error message under any field the user has touched but left invalid.
 
 **Beginner**
+
+- The login form's password error says "Min. 8 chars" but only `required` is applied to the input. Add `minlength="8"`, then split the single `<mat-error>` into two `@if` blocks so the message tells the user _which_ rule failed.
+
+**Beginner**
+
 - Convert the reactive registration form's `password` field to also require at least one digit, using an inline custom validator function (a regex check returning `{ noDigit: true }` when it fails).
 
 **Intermediate**
+
 - In the admin product form, disable the "Create Product" button while the form is invalid (`[disabled]="form.invalid"`) and add an early `if (this.form.invalid) { this.form.markAllAsTouched(); return; }` guard at the top of `submitForm()`. Explain why you want **both**.
 
 **Intermediate**
+
 - Add a `<mat-hint>Checking availability…</mat-hint>` to the SKU field that only shows while `form.get('sku')?.pending` is true, then raise the fake delay in `validateSku` to 2000ms so you can actually see it.
 
-**Challenge**
-- Make the admin product form work for **editing** too: `products/:id/edit` already routes to the same component, so read the `id` route param, fetch the product, and `patchValue()` the form (remember to rebuild the `images` FormArray — `patchValue` won't create controls that don't exist yet).
+**Intermediate**
+
+- Fix the stale-error gotcha in `MatchPasswordDirective`: implement `OnChanges` + `registerOnValidatorChange` (see [Mini Example 7](#mini-examples)), then prove it works by typing matching passwords and _then_ editing the first field.
 
 **Challenge**
+
+- Rebuild the template-driven register form as a **reactive** form: one `FormGroup`, a group-level `passwordsMatch` validator instead of the directive, and no `model` object at all. Then write down which version you'd rather unit-test, and why.
+
+**Challenge**
+
 - Build a reactive "shipping addresses" form where users can add/remove multiple addresses using a `FormArray` of `FormGroup`s (each with its own `street`/`city`/`postalCode` validators), and show a form-level error if two addresses are identical.

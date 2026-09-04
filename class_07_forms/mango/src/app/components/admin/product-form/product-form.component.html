@@ -27,6 +27,10 @@
 
     <mat-form-field appearance="outline" class="full-width-field">
       <mat-label>Category</mat-label>
+      <!-- mat-select is a custom form control: it implements ControlValueAccessor,
+           which is the interface that lets ANY component (not just <input>) plug into
+           formControlName. [value] on the option decides what lands in the form value -
+           here the numeric id, not the label the user sees. -->
       <mat-select formControlName="categoryId">
         @for (category of categories(); track category.id) {
           <mat-option [value]="category.id">
@@ -64,6 +68,9 @@
       <input type="text" matInput formControlName="sku" />
       <!-- Reading a specific error key lets you show a targeted message. 'skuTaken' is the key
            returned by the async validator; the optional chaining matters because get() can return null. -->
+      <!-- While the async validator's HTTP call is in flight the control's status is
+           'PENDING' and errors is null, so neither message shows. Bind to
+           form.get('sku')?.pending if you want a spinner during that gap. -->
       @if (form.get('sku')?.errors?.['skuTaken']) {
         <mat-error>SKU is already taken</mat-error>
       } @else {
