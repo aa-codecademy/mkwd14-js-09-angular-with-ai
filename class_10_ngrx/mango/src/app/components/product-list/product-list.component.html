@@ -1,0 +1,47 @@
+<div class="container product-list-page">
+  <div class="page-header">
+    <h1>All Products</h1>
+  </div>
+
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-label>Search products</mat-label>
+    <!-- (ngModelChange)="" -->
+    <!-- [ngModel]="" -->
+    <!-- $event === event.target.value -->
+    <input
+      matInput
+      type="search"
+      placeholder="Search..."
+      [(ngModel)]="searchQuery"
+      (ngModelChange)="onSearch($event)"
+    />
+  </mat-form-field>
+
+  @if (searchQuery()) {
+    <div>Filtering by "{{ searchQuery() }}"</div>
+  }
+
+  <mat-chip-listbox>
+    <mat-chip-option [selected]="!activeCategoryId()" (click)="activeCategoryId.set(null)"
+      >All</mat-chip-option
+    >
+    @for (category of categories(); track category.id) {
+      <mat-chip-option
+        [selected]="category.id === activeCategoryId()"
+        (click)="activeCategoryId.set(category.id)"
+      >
+        {{ category.name }}
+      </mat-chip-option>
+    }
+  </mat-chip-listbox>
+
+  <div class="products-grid">
+    @for (product of products(); track product.id) {
+      <app-product-card [product]="product" />
+    } @empty {
+      <div class="empty-state empty-state-full-width">
+        <p>No products founds.</p>
+      </div>
+    }
+  </div>
+</div>
