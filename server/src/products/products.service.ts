@@ -36,9 +36,7 @@ export class ProductsService {
     private readonly productsRepository: Repository<Product>,
   ) {}
 
-  async findAll(
-    query: QueryProductsDto,
-  ): Promise<Product[] | PaginatedProducts> {
+  async findAll(query: QueryProductsDto): Promise<PaginatedProducts> {
     const qb = this.productsRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category');
@@ -60,11 +58,8 @@ export class ProductsService {
     const sortDir = (query.sortDir ?? 'asc').toUpperCase() as 'ASC' | 'DESC';
     qb.orderBy(`product.${query.sortBy ?? 'id'}`, sortDir);
 
-    // Without an explicit page/limit the caller wants the whole (filtered) list.
-    if (query.page === undefined && query.limit === undefined) {
-      return qb.getMany();
-    }
-
+    // This endpoint is always paginated: an omitted page/limit falls back to the
+    // defaults rather than dumping the whole table, so the response shape never varies.
     const page = query.page ?? 1;
     const limit = query.limit ?? DEFAULT_PAGE_SIZE;
     qb.skip((page - 1) * limit).take(limit);

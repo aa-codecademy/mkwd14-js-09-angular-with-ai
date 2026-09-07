@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import type { Product } from '../../core/models/product.model';
-import type { Observable } from 'rxjs';
+import { map, type Observable } from 'rxjs';
 import type {
   ProductQuery,
   PaginatedProducts,
@@ -20,9 +20,8 @@ export class ProductService {
   // signal should convert with toSignal() rather than this service trying to hold the state.
   // Keeping the service "dumb" (just HTTP calls) and letting components own their own signals
   // for loading/data/error state keeps responsibilities cleanly split.
-  // The backend only paginates when it actually receives page/limit - without them it
-  // answers with the whole (filtered) array. So every defined field of the query has to be
-  // turned into a real query param, or `result.data`/`result.total` come back undefined.
+  // GET /products is always paginated, so every defined field of the query has to be
+  // turned into a real query param - otherwise the server just applies its own defaults.
   getAll(query: ProductQuery = {}): Observable<PaginatedProducts> {
     let params = new HttpParams();
     for (const [key, value] of Object.entries(query)) {
@@ -37,14 +36,20 @@ export class ProductService {
 
   // HttpParams is immutable - .set() returns a NEW HttpParams instance rather than mutating this
   // one, so it must be chained/reassigned, never called and discarded.
+  // Both of these want a plain list, but the endpoint always answers with a page
+  // envelope - so they unwrap `.data` and let the server's default page size apply.
   search(query: string): Observable<Product[]> {
     const params = new HttpParams().set('search', query);
-    return this.httpClient.get<Product[]>(`${this.apiUrl}/products`, { params });
+    return this.httpClient
+      .get<PaginatedProducts>(`${this.apiUrl}/products`, { params })
+      .pipe(map((page) => page.data));
   }
 
   getFeatured(): Observable<Product[]> {
     const params = new HttpParams().set('featured', true);
-    return this.httpClient.get<Product[]>(`${this.apiUrl}/products`, { params });
+    return this.httpClient
+      .get<PaginatedProducts>(`${this.apiUrl}/products`, { params })
+      .pipe(map((page) => page.data));
   }
 
   getById(id: number): Observable<Product> {
