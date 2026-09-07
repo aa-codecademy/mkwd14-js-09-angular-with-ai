@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, ChangeDetectionStrategy } from '@angular/core';
 import { MatAnchor, MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -9,6 +9,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
   selector: 'app-product-not-found',
   imports: [MatIconModule, RouterLink, MatAnchor, MatButtonModule],
   templateUrl: './product-not-found.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './product-not-found.component.css',
 })
 export class ProductNotFound {

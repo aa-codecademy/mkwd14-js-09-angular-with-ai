@@ -1,6 +1,10 @@
 import { inject, Injectable } from '@angular/core';
 import type { Product } from '../../core/models/product.model';
-import { BehaviorSubject, type Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
+import type {
+  ProductQuery,
+  PaginatedProducts,
+} from '../../store/features/product.feature';
 import { API_URL } from '../../tokens/api-url.token';
 import { HttpClient, HttpParams } from '@angular/common/http';
 
@@ -16,8 +20,19 @@ export class ProductService {
   // signal should convert with toSignal() rather than this service trying to hold the state.
   // Keeping the service "dumb" (just HTTP calls) and letting components own their own signals
   // for loading/data/error state keeps responsibilities cleanly split.
-  getAll(query: any): Observable<Product[]> {
-    return this.httpClient.get<Product[]>(`${this.apiUrl}/products`);
+  // The backend only paginates when it actually receives page/limit - without them it
+  // answers with the whole (filtered) array. So every defined field of the query has to be
+  // turned into a real query param, or `result.data`/`result.total` come back undefined.
+  getAll(query: ProductQuery = {}): Observable<PaginatedProducts> {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== null && value !== '') {
+        params = params.set(key, String(value));
+      }
+    }
+    return this.httpClient.get<PaginatedProducts>(`${this.apiUrl}/products`, {
+      params,
+    });
   }
 
   // HttpParams is immutable - .set() returns a NEW HttpParams instance rather than mutating this

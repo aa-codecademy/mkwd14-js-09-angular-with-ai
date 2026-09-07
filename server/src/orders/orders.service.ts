@@ -6,11 +6,22 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { Order } from './order.entity';
+import { Order, OrderStatus } from './order.entity';
 import { OrderItem } from './order-item.entity';
 import { Product } from '../products/product.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { QueryOrdersDto } from './dto/query-orders.dto';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
+
+export const DEFAULT_ORDER_PAGE_SIZE = 20;
+
+export interface PaginatedOrders {
+  data: Order[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
 
 @Injectable()
 export class OrdersService {
@@ -78,6 +89,64 @@ export class OrdersService {
       where: { userId },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  /** Every order in the system — admin only, paginated and sortable. */
+  async findAllForAdmin(query: QueryOrdersDto): Promise<PaginatedOrders> {
+    const qb = this.ordersRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.user', 'user')
+      .leftJoinAndSelect('order.items', 'item')
+      .leftJoinAndSelect('item.product', 'product');
+
+    if (query.status) {
+      qb.andWhere('order.status = :status', { status: query.status });
+    }
+
+    const sortDir = (query.sortDir ?? 'desc').toUpperCase() as 'ASC' | 'DESC';
+    qb.orderBy(`order.${query.sortBy ?? 'createdAt'}`, sortDir);
+
+    const page = query.page ?? 1;
+    const limit = query.limit ?? DEFAULT_ORDER_PAGE_SIZE;
+
+    // The joined items would make take/skip count rows, not orders, so count
+    // the orders separately and page the parent entity.
+    const total = await qb.getCount();
+    const data = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
+  /**
+   * Admin approve/decline. Cancelling puts the reserved stock back, but only on
+   * the first transition into CANCELLED so a repeated call can't inflate it.
+   */
+  async updateStatus(id: number, status: OrderStatus): Promise<Order> {
+    const order = await this.ordersRepository.findOne({ where: { id } });
+    if (!order) throw new NotFoundException(`Order ${id} not found`);
+
+    if (status === 'CANCELLED' && order.status !== 'CANCELLED') {
+      const products = await this.productsRepository.findBy({
+        id: In(order.items.map((item) => item.productId)),
+      });
+      for (const item of order.items) {
+        const product = products.find((p) => p.id === item.productId);
+        if (product) product.stock += item.quantity;
+      }
+      await this.productsRepository.save(products);
+    }
+
+    order.status = status;
+    return this.ordersRepository.save(order);
   }
 
   async findOne(

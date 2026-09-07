@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 // FormsModule is what makes ngModel work. NgForm is the *type* of the object
 // Angular hands you from `#loginForm="ngForm"` in the template.
 import { FormsModule, NgForm } from '@angular/forms';
@@ -25,6 +25,7 @@ import type { Login } from '../../../core/models/auth.model';
     RouterLink,
   ],
   templateUrl: './login.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './login.component.css',
 })
 export class LoginComponent {

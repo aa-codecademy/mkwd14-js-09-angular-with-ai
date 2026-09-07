@@ -9,7 +9,20 @@ import {
   Min,
 } from 'class-validator';
 
-export type ProductSortField = 'name' | 'price' | 'createdAt';
+export const PRODUCT_SORT_FIELDS = [
+  'id',
+  'name',
+  'sku',
+  'price',
+  'discountPercent',
+  'stock',
+  'rating',
+  'reviewCount',
+  'featured',
+  'createdAt',
+] as const;
+
+export type ProductSortField = (typeof PRODUCT_SORT_FIELDS)[number];
 export type SortDirection = 'asc' | 'desc';
 
 export class QueryProductsDto {
@@ -47,9 +60,9 @@ export class QueryProductsDto {
   @Min(1)
   limit?: number;
 
-  @ApiPropertyOptional({ enum: ['name', 'price', 'createdAt'] })
+  @ApiPropertyOptional({ enum: PRODUCT_SORT_FIELDS })
   @IsOptional()
-  @IsIn(['name', 'price', 'createdAt'])
+  @IsIn([...PRODUCT_SORT_FIELDS])
   sortBy?: ProductSortField;
 
   @ApiPropertyOptional({ enum: ['asc', 'desc'] })

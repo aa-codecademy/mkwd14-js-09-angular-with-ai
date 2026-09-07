@@ -1,13 +1,12 @@
 import {
   signalStoreFeature,
   withComputed,
-  withEntities,
   withMethods,
   withState,
-  rxMethod,
   patchState,
-  setAllEntities,
 } from '@ngrx/signals';
+import { withEntities, setAllEntities } from '@ngrx/signals/entities';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import type { Product } from '../../core/models/product.model';
 import { computed, inject, type Signal } from '@angular/core';
 import { ProductService } from '../../shared/services/product.service';
@@ -26,8 +25,17 @@ export interface ProductQuery {
   sortDir?: SortDirection;
 }
 
+/** Mirrors the backend's PaginatedProducts response. */
+export interface PaginatedProducts {
+  data: Product[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export type ProductQueryConfig = {
-  pageSize: number;
+  pageSize?: number;
   sortBy?: ProductSortField;
   sortDir?: SortDirection;
   pageSizeOptions?: readonly number[];
@@ -47,7 +55,7 @@ export type ProductQueryState = {
   isLoading: boolean;
 };
 
-export function withProductQuery(config: ProductQueryConfig) {
+export function withProductQuery(config: ProductQueryConfig = {}) {
   const {
     pageSize = 12,
     sortBy = 'createdAt',
@@ -79,7 +87,7 @@ export function withProductQuery(config: ProductQueryConfig) {
         sortBy: state.sortBy(),
         sortDir: state.sortDir(),
         page: state.page(),
-        limit: state.limit(),
+        limit: state.pageSize(),
       }));
 
       return {
@@ -97,11 +105,11 @@ export function withProductQuery(config: ProductQueryConfig) {
                 patchState(store, setAllEntities(result.data), {
                   total: result.total,
                   totalPages: result.totalPages,
-                  loading: false,
+                  isLoading: false,
                 }),
               ),
-              catchError((error) => {
-                patchState(store, { loading: false });
+              catchError(() => {
+                patchState(store, { isLoading: false });
                 return of(null);
               }),
             ),

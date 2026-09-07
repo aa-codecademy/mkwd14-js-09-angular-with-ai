@@ -4,7 +4,7 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { API_URL } from './tokens/api-url.token';
 import { environment } from '../environments/environment';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
 
@@ -17,7 +17,7 @@ export const appConfig: ApplicationConfig = {
     // Registers the Router service app-wide and wires up our `routes` array - without this,
     // <router-outlet> and routerLink would have nothing to talk to.
     provideRouter(routes),
-    provideHttpClient(withInterceptors([loadingInterceptor])),
+    provideHttpClient(withXhr(), withInterceptors([loadingInterceptor])),
     { provide: API_URL, useValue: environment.apiUrl },
     provideStoreDevtools({ maxAge: 25, logOnly: !isDevMode() }),
   ],

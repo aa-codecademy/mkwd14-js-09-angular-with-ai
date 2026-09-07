@@ -7,6 +7,7 @@ import {
   type OnChanges,
   type OnDestroy,
   type OnInit,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import type { Product } from '../../core/models/product.model';
 import { ProductService } from '../../shared/services/product.service';
@@ -43,6 +44,7 @@ import { MatChipsModule } from '@angular/material/chips';
     MatChipsModule,
   ],
   templateUrl: './product-list.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './product-list.component.css',
 })
 // Implementing these lifecycle interfaces is optional but gives you compile-time checking that

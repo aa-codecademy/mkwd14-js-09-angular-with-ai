@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, type FormGroup } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -26,6 +26,7 @@ import { NotificationService } from '../../shared/services/notification.service'
     CurrencyPipe,
   ],
   templateUrl: './checkout.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './checkout.component.css',
 })
 export class CheckoutComponent {

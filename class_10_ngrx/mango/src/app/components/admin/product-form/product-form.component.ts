@@ -1,4 +1,11 @@
-import { Component, computed, inject, signal, type OnInit } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  signal,
+  type OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import {
   FormBuilder,
   ReactiveFormsModule,
@@ -41,6 +48,7 @@ import { ProductService } from '../../../shared/services/product.service';
     RouterLink,
   ],
   templateUrl: './product-form.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './product-form.component.css',
 })
 export class ProductFormComponent implements OnInit {

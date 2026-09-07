@@ -10,7 +10,9 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column({ name: 'password_hash' })
+  // select: false — the hash must never ride along on an eagerly loaded User
+  // (orders load theirs). Login re-selects it explicitly.
+  @Column({ name: 'password_hash', select: false })
   passwordHash: string;
 
   @Column({ name: 'first_name' })

@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, ChangeDetectionStrategy } from '@angular/core';
 import type { Product } from '../../core/models/product.model';
 import { MatCard, MatCardImage, MatCardContent, MatCardActions } from '@angular/material/card';
 import { CurrencyPipe } from '@angular/common';
@@ -22,6 +22,7 @@ import { RouterLink } from '@angular/router';
     RouterLink,
   ],
   templateUrl: './product-card.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './product-card.component.css',
 })
 export class ProductCardComponent {

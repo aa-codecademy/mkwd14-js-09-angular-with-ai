@@ -57,6 +57,15 @@ export class AuthService {
   async login(dto: LoginDto): Promise<AuthResponse> {
     const user = await this.usersRepository.findOne({
       where: { email: dto.email },
+      select: {
+        id: true,
+        email: true,
+        passwordHash: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        createdAt: true,
+      },
     });
     if (!user) throw new UnauthorizedException('Invalid credentials');
 

@@ -10,7 +10,14 @@ import {
 import { User } from '../auth/entities/user.entity';
 import { OrderItem } from './order-item.entity';
 
-export type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'CANCELLED';
+export const ORDER_STATUSES = [
+  'PENDING',
+  'PAID',
+  'SHIPPED',
+  'CANCELLED',
+] as const;
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 @Entity('orders')
 export class Order {

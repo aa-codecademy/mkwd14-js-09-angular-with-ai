@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 
 // A "shell" / layout component - it has no state or logic of its own, it just wraps Angular Material's
@@ -9,6 +9,7 @@ import { MatCardModule } from '@angular/material/card';
   styleUrl: './card-shell.component.css',
   // standalone component imports array - must list every directive/component used in the
   // template (here just MatCardModule for mat-card/mat-card-content/mat-card-actions).
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [MatCardModule],
 })
 export class CardShellComponent {}

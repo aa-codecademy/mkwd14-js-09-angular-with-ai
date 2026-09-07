@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { LoadingService } from '../../services/loading.service';
 
@@ -9,10 +9,11 @@ import { LoadingService } from '../../services/loading.service';
   selector: 'app-loading-overlay',
   imports: [MatProgressSpinnerModule],
   templateUrl: './loading-overlay.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './loading-overlay.component.css',
 })
 export class LoadingOverlayComponent {
   // inject() - modern DI, avoids constructor boilerplate. Public (no `private`) so the
   // template can call loadingService.isLoading() directly.
-  loadingService = inject(LoadingService)
+  loadingService = inject(LoadingService);
 }
