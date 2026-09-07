@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component } from '@angular/core';
 import { NavbarComponent } from './shared/components/navbar/navbar.component';
 import type { Product } from './core/models/product.model';
 import { FooterComponent } from './shared/components/footer/footer.component';
@@ -15,7 +15,6 @@ import { LoadingOverlayComponent } from './shared/components/loading-overlay/loa
   styleUrl: './app.component.css',
   // RouterOutlet must be imported here so <router-outlet> works in the template - forgetting this
   // is the most common reason a router directive silently does nothing.
-  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [NavbarComponent, FooterComponent, RouterOutlet, LoadingOverlayComponent],
 })
 export class AppComponent {

@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule, type NgForm } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -28,7 +28,6 @@ import { MatchPasswordDirective } from '../../../shared/directives/match-passwor
     MatchPasswordDirective,
   ],
   templateUrl: './register.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './register.component.css',
 })
 export class RegisterComponent {

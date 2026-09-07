@@ -1,4 +1,4 @@
-import { Component, inject, signal, type OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, type OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatAnchor } from '@angular/material/button';
 import { ProductService } from '../../shared/services/product.service';
@@ -12,7 +12,6 @@ import { ProductCardComponent } from '../product-card/product-card.component';
   // components don't automatically "see" each other, each declares its own dependencies.
   imports: [RouterLink, MatAnchor, ProductCardComponent],
   templateUrl: './home.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './home.component.css',
 })
 // No logic needed here - this component's only job is to compose markup via CardShellComponent.

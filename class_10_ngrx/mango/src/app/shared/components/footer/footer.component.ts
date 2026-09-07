@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 // A "dumb"/presentational component - no inputs, no logic, purely static markup extracted into its
@@ -7,7 +7,6 @@ import { RouterLink } from '@angular/router';
   selector: 'app-footer',
   imports: [RouterLink],
   templateUrl: './footer.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './footer.component.css',
 })
 export class FooterComponent {}

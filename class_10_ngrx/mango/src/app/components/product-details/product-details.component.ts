@@ -1,4 +1,4 @@
-import { Component, inject, signal, type OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, type OnInit } from '@angular/core';
 import { ProductService } from '../../shared/services/product.service';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import type { Product } from '../../core/models/product.model';
@@ -13,7 +13,6 @@ import { map, switchMap } from 'rxjs';
   selector: 'app-product-details',
   imports: [JsonPipe, MatButtonModule, RouterLink, MatIcon, CurrencyPipe, ProductNotFound],
   templateUrl: './product-details.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './product-details.component.css',
 })
 export class ProductDetails implements OnInit {

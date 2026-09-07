@@ -4,13 +4,14 @@ import {
   withMethods,
   withState,
   patchState,
+  withHooks,
 } from '@ngrx/signals';
 import { withEntities, setAllEntities } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import type { Product } from '../../core/models/product.model';
 import { computed, inject, type Signal } from '@angular/core';
 import { ProductService } from '../../shared/services/product.service';
-import { catchError, of, pipe, switchMap, tap } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, of, pipe, switchMap, tap } from 'rxjs';
 
 export type ProductSortField = 'id' | 'name' | 'price' | 'stock' | 'rating' | 'createdAt';
 
@@ -117,9 +118,37 @@ export function withProductQuery(config: ProductQueryConfig = {}) {
         ),
       );
 
+      const commitSearch = rxMethod<string>(
+        pipe(
+          debounceTime(searchDebounceMs),
+          distinctUntilChanged(),
+          tap((search) => patchState(store, { search, page: 1 })),
+        ),
+      );
+
       return {
         _load: load,
+        _commitSearch: commitSearch,
+
+        setSearch(searchInput: string): void {
+          patchState(store, { searchInput });
+        },
+        setCategory(categoryId: number | null): void {
+          patchState(store, { categoryId, page: 1 });
+        },
+        setSortField(sortField: ProductSortField): void {
+          patchState(store, { sortBy: sortField });
+        },
+        setSortDir(sortDir: SortDirection): void {
+          patchState(store, { sortDir: sortDir });
+        },
       };
+    }),
+    withHooks({
+      onInit(store) {
+        store._commitSearch(store.searchInput);
+        store._load(store.query);
+      },
     }),
   );
 }

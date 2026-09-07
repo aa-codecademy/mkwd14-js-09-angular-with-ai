@@ -4,7 +4,6 @@ import {
   inject,
   signal,
   type OnInit,
-  ChangeDetectionStrategy,
 } from '@angular/core';
 import {
   FormBuilder,
@@ -48,7 +47,6 @@ import { ProductService } from '../../../shared/services/product.service';
     RouterLink,
   ],
   templateUrl: './product-form.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './product-form.component.css',
 })
 export class ProductFormComponent implements OnInit {

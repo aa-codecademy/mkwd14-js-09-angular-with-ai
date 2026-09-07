@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CartService } from '../../shared/services/cart.service';
 import { MatIcon, MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
@@ -10,7 +10,6 @@ import { CurrencyPipe } from '@angular/common';
   selector: 'app-cart',
   templateUrl: './cart.component.html',
   styleUrl: './cart.component.css',
-  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [MatIconModule, RouterLink, MatButtonModule, MatTableModule, CurrencyPipe],
 })
 export class CartComponent {
