@@ -1,0 +1,68 @@
+<div class="container page-container">
+  <div class="header-row">
+    <h1 class="page-title">Product Admin</h1>
+    <div class="admin-header-actions">
+      <a mat-stroked-button routerLink="/admin/orders"><mat-icon>receipt_long</mat-icon> Orders</a>
+      <a mat-flat-button color="primary" routerLink="/admin/products/new">
+        <mat-icon>add</mat-icon>
+        New Product</a
+      >
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <span class="stat">10 products</span>
+    <span class="stat stat-warn">{{ store.lowStockCount() }} products are low in stock</span>
+    <span class="stat stat-danger">{{ store.outOfStockCount() }} products are out of stock</span>
+  </div>
+
+  <div class="filter-row"></div>
+
+  <table [dataSource]="store.products()" mat-table class="full-width-table">
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let product">{{ product.name }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="price">
+      <th mat-header-cell *matHeaderCellDef>Price</th>
+      <td mat-cell *matCellDef="let product">{{ product.price }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="stock">
+      <th mat-header-cell *matHeaderCellDef>Stock</th>
+      <td mat-cell *matCellDef="let product">
+        @if (product.stock === 0) {
+          <span class="out-of-stock-badge">Out of stock</span>
+        } @else {
+          {{ product.stock }}
+        }
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let product" class="actions-cell">
+        <a mat-icon-button [routerLink]="['/admin/products', product.id, 'edit']"
+          ><mat-icon>edit</mat-icon></a
+        >
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayColumns"></tr>
+  </table>
+
+  <!-- <p class="result-count">
+    Showing {{ store.firstResult() }}-{{ store.lastResult() }} of {{ store.total() }}
+  </p> -->
+
+  <app-pagination
+    [page]="store.page()"
+    [pageSize]="store.pageSize()"
+    [total]="store.total()"
+    [pageSizeOptions]="store.pageSizeOptions()"
+    (pageChange)="store.setPage($event)"
+    (pageSizeChange)="store.setPageSize($event)"
+  />
+</div>

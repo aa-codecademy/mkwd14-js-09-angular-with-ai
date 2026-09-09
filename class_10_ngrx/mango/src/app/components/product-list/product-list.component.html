@@ -7,6 +7,9 @@
     <mat-form-field appearance="outline" class="search-field">
       <mat-label>Search products</mat-label>
       <mat-icon>search</mat-icon>
+      <!-- One-way [ngModel] + (ngModelChange) instead of two-way [(ngModel)]. Two-way binding
+           needs a writable property to assign into, and store signals are read-only from out
+           here - so you read with [ngModel] and write through a store method. -->
       <input
         matInput
         type="search"
@@ -14,6 +17,8 @@
         [ngModel]="store.searchInput()"
         (ngModelChange)="store.setSearch($event)"
       />
+      <!-- @if only creates the clear button when there's something to clear - it's removed
+           from the DOM entirely, not just hidden with CSS. -->
       @if (store.searchInput()) {
         <button matSuffix aria-label="Clear search" mat-icon-button (click)="store.setSearch('')">
           <mat-icon>close</mat-icon>
@@ -23,6 +28,8 @@
 
     <mat-form-field appearance="outline">
       <mat-label>Sort by</mat-label>
+      <!-- Changing this calls one setter and nothing else. The store's onInit already watches
+           the `query` signal, so the refetch happens on its own. -->
       <mat-select [ngModel]="store.sortBy()" (ngModelChange)="store.setSortField($event)">
         <mat-option value="id">Featured</mat-option>
         <mat-option value="price">Price</mat-option>
@@ -41,15 +48,22 @@
     </mat-form-field>
   </div>
 
+  <!-- Reading `searchInput` (not `search`) here means the label updates as you type, before
+       the debounced request even fires. That's the payoff of splitting the two fields. -->
   @if (store.searchInput()) {
     <div>Filtering by "{{ store.searchInput() }}"</div>
   }
 
   <mat-chip-listbox>
+    <!-- `null` means "no category filter", so the All chip is selected whenever categoryId
+         is empty. -->
     <mat-chip-option [selected]="!store.categoryId()" (click)="store.setCategory(null)"
       >All</mat-chip-option
     >
-    @for (category of categories(); track category.id) {
+    <!-- `track category.id` gives Angular a stable identity per row so it moves existing DOM
+         nodes instead of destroying and rebuilding them. Never track by $index for data that
+         can be reordered or filtered. -->
+    @for (category of store.categories(); track category.id) {
       <mat-chip-option
         [selected]="category.id === store.categoryId()"
         (click)="store.setCategory(category.id)"
@@ -62,10 +76,28 @@
   <div class="products-grid">
     @for (product of store.products(); track product.id) {
       <app-product-card [product]="product" />
+      <!-- @empty is the built-in "no results" branch - it renders when the list is empty, so
+           you don't need a separate @if with a .length check. -->
     } @empty {
       <div class="empty-state empty-state-full-width">
         <p>No products founds.</p>
+        <!-- Only offer "clear filters" if filters are actually the reason it's empty. -->
+        @if (store.hasActiveFilters()) {
+          <button mat-stroked-button (click)="store.clearFilters()">Clear filters</button>
+        }
       </div>
     }
   </div>
+
+  <!-- The pagination component knows nothing about the store: it takes plain numbers in and
+       emits plain numbers out. That's the presentational ("dumb") component pattern - it stays
+       reusable because the parent, not the child, decides where the data comes from. -->
+  <app-pagination
+    [page]="store.page()"
+    [pageSize]="store.pageSize()"
+    [total]="store.total()"
+    [pageSizeOptions]="store.pageSizeOptions()"
+    (pageChange)="store.setPage($event)"
+    (pageSizeChange)="store.setPageSize($event)"
+  />
 </div>

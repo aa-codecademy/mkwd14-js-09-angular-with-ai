@@ -19,6 +19,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withXhr(), withInterceptors([loadingInterceptor])),
     { provide: API_URL, useValue: environment.apiUrl },
+    // Gotcha: this instruments the CLASSIC Redux store from @ngrx/store, which this app does
+    // not use - there's no provideStore() anywhere, so right now this line does nothing.
+    // @ngrx/signals is a separate implementation with no actions and no reducers, so the Redux
+    // DevTools extension has nothing to receive. Signal stores are inspected with Angular
+    // DevTools (or the community @angular-architects/ngrx-toolkit `withDevtools()` feature).
     provideStoreDevtools({ maxAge: 25, logOnly: !isDevMode() }),
   ],
 };
