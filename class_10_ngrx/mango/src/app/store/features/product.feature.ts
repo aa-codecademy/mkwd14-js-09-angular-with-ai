@@ -12,10 +12,9 @@ import type { Product } from '../../core/models/product.model';
 import { computed, inject, type Signal } from '@angular/core';
 import { ProductService } from '../../shared/services/product.service';
 import { catchError, debounceTime, distinctUntilChanged, of, pipe, switchMap, tap } from 'rxjs';
+import type { SortDirection } from '../../core/types/sort-direction.type';
 
 export type ProductSortField = 'id' | 'name' | 'price' | 'stock' | 'rating' | 'createdAt';
-
-export type SortDirection = 'asc' | 'desc';
 
 // This is the shape we send TO the server. Keeping it separate from the store's own state
 // (below) means the UI can hold extra bookkeeping the API never needs to know about.

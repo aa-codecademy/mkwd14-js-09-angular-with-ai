@@ -1,0 +1,75 @@
+<div class="filter-row">
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-label>Search products</mat-label>
+    <mat-icon>search</mat-icon>
+    <!-- One-way [ngModel] + (ngModelChange) instead of two-way [(ngModel)]. Two-way binding
+         needs a writable property to assign into, and store signals are read-only from out
+         here - so you read with [ngModel] and write through a store method. -->
+    <input
+      matInput
+      type="search"
+      placeholder="Search..."
+      [ngModel]="search()"
+      (ngModelChange)="searchChange.emit($event)"
+    />
+    <!-- @if only creates the clear button when there's something to clear - it's removed
+         from the DOM entirely, not just hidden with CSS. -->
+    @if (search()) {
+      <button matSuffix aria-label="Clear search" mat-icon-button (click)="searchChange.emit('')">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Sort by</mat-label>
+    <!-- Changing this calls one setter and nothing else. The store's onInit already watches
+         the `query` signal, so the refetch happens on its own. -->
+    <mat-select [ngModel]="sortBy()" (ngModelChange)="sortByChange.emit($event)">
+      <mat-option value="id">Featured</mat-option>
+      <mat-option value="price">Price</mat-option>
+      <mat-option value="name">Name</mat-option>
+      <mat-option value="rating">Rating</mat-option>
+      <mat-option value="createdAt">Newest / Oldest</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Sort direction</mat-label>
+    <mat-select [ngModel]="sortDir()" (ngModelChange)="sortDirChange.emit($event)">
+      <mat-option value="desc">Descending</mat-option>
+      <mat-option value="asc">Ascending</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  @if (categoryStyle() === 'chips') {
+    <mat-chip-listbox>
+      <!-- `null` means "no category filter", so the All chip is selected whenever categoryId
+           is empty. -->
+      <mat-chip-option [selected]="!categoryId()" (click)="categoryChange.emit(null)"
+        >All</mat-chip-option
+      >
+      <!-- `track category.id` gives Angular a stable identity per row so it moves existing DOM
+           nodes instead of destroying and rebuilding them. Never track by $index for data that
+           can be reordered or filtered. -->
+      @for (category of categories(); track category.id) {
+        <mat-chip-option
+          [selected]="category.id === categoryId()"
+          (click)="categoryChange.emit(category.id)"
+        >
+          {{ category.name }}
+        </mat-chip-option>
+      }
+    </mat-chip-listbox>
+  } @else {
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Category</mat-label>
+      <mat-select [ngModel]="categoryId()" (ngModelChange)="categoryChange.emit($event)">
+        <mat-option [value]="null">All categories</mat-option>
+        @for (category of categories(); track category.id) {
+          <mat-option [value]="category.id">{{ category.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+</div>

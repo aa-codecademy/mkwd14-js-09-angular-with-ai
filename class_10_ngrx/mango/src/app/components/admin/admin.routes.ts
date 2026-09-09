@@ -18,4 +18,8 @@ export const adminRoutes: Routes = [
     loadComponent: () =>
       import('./product-form/product-form.component').then((m) => m.ProductFormComponent),
   },
+  {
+    path: 'orders',
+    loadComponent: () => import('./orders/orders.component').then((m) => m.OrdersComponent),
+  },
 ];

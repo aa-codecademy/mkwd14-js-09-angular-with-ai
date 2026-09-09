@@ -1,4 +1,5 @@
 import { signalStore } from '@ngrx/signals';
+import { withDevtools } from '@ngrx-toolkit/core';
 import { withProductQuery } from '../features/product.feature';
 import { withCategories } from '../features/categories.feature';
 
@@ -17,4 +18,5 @@ export const ProductsStore = signalStore(
     pageSizeOptions: [4, 8, 12, 24, 48, 96],
   }),
   withCategories(),
+  withDevtools('ProductsStore'),
 );

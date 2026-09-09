@@ -16,7 +16,18 @@
     <span class="stat stat-danger">{{ store.outOfStockCount() }} products are out of stock</span>
   </div>
 
-  <div class="filter-row"></div>
+  <app-product-filters
+    [search]="store.searchInput()"
+    [sortBy]="store.sortBy()"
+    [sortDir]="store.sortDir()"
+    [categories]="store.categories()"
+    [categoryId]="store.categoryId()"
+    categoryStyle="select"
+    (searchChange)="store.setSearch($event)"
+    (sortByChange)="store.setSortField($event)"
+    (sortDirChange)="store.setSortDir($event)"
+    (categoryChange)="store.setCategory($event)"
+  />
 
   <table [dataSource]="store.products()" mat-table class="full-width-table">
     <ng-container matColumnDef="name">

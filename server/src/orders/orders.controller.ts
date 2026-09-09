@@ -51,7 +51,9 @@ export class OrdersController {
 
   @Patch(':id/status')
   @Roles('ADMIN')
-  @ApiOperation({ summary: 'Approve, decline or advance an order (admin only)' })
+  @ApiOperation({
+    summary: 'Approve, decline or advance an order (admin only)',
+  })
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOrderStatusDto,

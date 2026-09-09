@@ -9,6 +9,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { ProductsStore } from '../../store/products/products.store';
 import { MatSelectModule } from '@angular/material/select';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
+import { ProductFiltersComponent } from "../../shared/components/product-filters/product-filters.component";
 
 @Component({
   selector: 'app-product-list',
@@ -22,7 +23,8 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
     MatButtonModule,
     MatChipsModule,
     MatSelectModule,
-  ],
+    ProductFiltersComponent
+],
   templateUrl: './product-list.component.html',
   styleUrl: './product-list.component.css',
 })

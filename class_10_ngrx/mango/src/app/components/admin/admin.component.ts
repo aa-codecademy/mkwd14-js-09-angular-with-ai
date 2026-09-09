@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { AdminProductsStore } from '../../store/products/admin-products.store';
+import { ProductFiltersComponent } from "../../shared/components/product-filters/product-filters.component";
 
 // Placeholder landing page for the /admin area - the product list/table goes here next class.
 // Note `template: ''` (inline, empty) instead of templateUrl: handy while scaffolding.
@@ -19,7 +20,8 @@ import { AdminProductsStore } from '../../store/products/admin-products.store';
     MatButtonModule,
     MatTableModule,
     PaginationComponent,
-  ],
+    ProductFiltersComponent
+],
 })
 export class AdminComponent {
   readonly store = inject(AdminProductsStore);

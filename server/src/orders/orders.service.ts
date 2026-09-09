@@ -13,7 +13,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 
-export const DEFAULT_ORDER_PAGE_SIZE = 20;
+export const DEFAULT_ORDER_PAGE_SIZE = 10;
 
 export interface PaginatedOrders {
   data: Order[];

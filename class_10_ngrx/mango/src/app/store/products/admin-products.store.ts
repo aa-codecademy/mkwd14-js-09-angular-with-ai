@@ -1,4 +1,5 @@
 import { signalStore, withComputed } from '@ngrx/signals';
+import { withDevtools } from '@ngrx-toolkit/core';
 import { withProductQuery } from '../features/product.feature';
 import { withCategories } from '../features/categories.feature';
 import { computed } from '@angular/core';
@@ -16,4 +17,5 @@ export const AdminProductsStore = signalStore(
     lowStockCount: computed(() => entities().filter((product) => product.stock <= 5).length),
     outOfStockCount: computed(() => entities().filter((product) => product.stock === 0).length),
   })),
+  withDevtools('AdminProductsStore'),
 );
