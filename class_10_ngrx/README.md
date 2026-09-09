@@ -15,13 +15,14 @@ Welcome to state management! Up to now every page owned its own signals, its own
   - [rxMethod](#rxmethod)
   - [withEntities](#withentities)
   - [signalStoreFeature](#signalstorefeature)
+  - [Configuring one feature twice](#configuring-one-feature-twice)
   - [Smart vs. presentational components](#smart-vs-presentational-components)
 - [Theory](#theory)
   - [Signal Store vs. classic NgRx Store](#signal-store-vs-classic-ngrx-store)
   - [The auto-refetch loop](#the-auto-refetch-loop)
   - [Why switchMap and not mergeMap](#why-switchmap-and-not-mergemap)
   - [Where catchError goes](#where-catcherror-goes)
-  - [A note on Redux DevTools](#a-note-on-redux-devtools)
+  - [Redux DevTools with withDevtools](#redux-devtools-with-withdevtools)
 - [Useful Links](#useful-links)
 - [Mini Examples](#mini-examples)
 - [Practice Exercises](#practice-exercises)
@@ -195,6 +196,40 @@ export function withPageSize(defaultSize = 12) {
 
 > **Note:** feature order matters. Features apply top to bottom, and a later one can read what earlier ones added — but not the other way round.
 
+### Configuring one feature twice
+
+Because `withProductQuery` is a *function* that takes config, you can build two completely
+different stores out of it. `ProductsStore` (the shop) and `AdminProductsStore` (the admin
+table) both plug in the same feature — one with 12 items per page sorted by newest, the other
+with 10 sorted by name.
+
+**Why it exists:** this is the whole reason config goes in a function parameter instead of in
+state. Config is chosen once by whoever builds the store, so it never has to be a signal and
+it never has to be duplicated per store.
+
+```ts
+export const ProductsStore = signalStore(
+  { providedIn: 'root' },
+  withProductQuery({ pageSize: 12 }),                                    // shop defaults
+  withCategories(),
+  withDevtools('ProductsStore'),
+);
+
+export const AdminProductsStore = signalStore(
+  { providedIn: 'root' },
+  withProductQuery({ pageSize: 10, sortBy: 'name', sortDir: 'asc' }),    // admin defaults
+  withCategories(),
+  // extra computed, layered on top of what the feature already added
+  withComputed(({ entities }) => ({
+    outOfStockCount: computed(() => entities().filter((p) => p.stock === 0).length),
+  })),
+  withDevtools('AdminProductsStore'),
+);
+```
+
+> **Note:** two stores built from the same feature are still two *separate* instances with
+> separate state. Filtering the admin table does not touch the shop page.
+
 ### Smart vs. presentational components
 
 `ProductListComponent` injects the store and knows all about it — that's a **smart** (container) component. `PaginationComponent` takes plain numbers in via `input()` and emits plain numbers out via `output()`, and has never heard of a store — that's a **presentational** (dumb) component.
@@ -226,7 +261,7 @@ You may have seen classic NgRx code — `createAction`, `createReducer`, `create
 | Derived data | `createSelector` | `withComputed` |
 | Side effects | `@ngrx/effects` | `rxMethod` |
 | Boilerplate | High | Low |
-| Redux DevTools | Yes | No (see below) |
+| Redux DevTools | Built in | Via `withDevtools()` (see below) |
 
 The trade-off is honest: classic NgRx gives you a full audit trail of every action, which is genuinely valuable in a large team. The signal store gives you 80% of the benefit for 20% of the code, which is the right call for most apps.
 
@@ -268,14 +303,43 @@ switchMap((query) => service.getAll(query).pipe(
 
 If you put it on the outer pipe instead, the first failed request errors the whole `rxMethod` stream. An errored observable is **finished** — it will never emit again — so your store would silently stop reacting to filter changes forever. One flaky request would break the page until a refresh.
 
-### A note on Redux DevTools
+### Redux DevTools with withDevtools
 
-`app.config.ts` calls `provideStoreDevtools(...)`, and it does nothing here. Two reasons:
+Signal stores have no actions and no reducers, so the Redux DevTools extension has nothing to
+subscribe to on its own — and `@ngrx/signals` ships no devtools entry point. The community
+package `@ngrx-toolkit/core` fills the gap: it pushes a **state snapshot** into the extension
+every time the store changes.
 
-1. It instruments the classic `@ngrx/store`, and this app never calls `provideStore()`.
-2. Signal stores have no actions and no reducers, so the Redux DevTools extension has no action stream to display. `@ngrx/signals` v22 ships no devtools entry point at all.
+Two pieces have to line up:
 
-To inspect a signal store, use **Angular DevTools** (it shows signal values in the component/injector tree), or add the community `withDevtools()` feature from `@angular-architects/ngrx-toolkit`, which pushes state snapshots into the Redux extension. Be aware it's not first-party, it's dev-mode only, and since there are no real actions you get state diffs rather than a meaningful action log — time-travel debugging won't work.
+```ts
+// app.config.ts - name the whole app once
+providers: [provideDevtoolsConfig({ name: 'Mango' })]
+```
+
+```ts
+// each store - add the feature LAST, with a unique name
+export const ProductsStore = signalStore(
+  { providedIn: 'root' },
+  withProductQuery({ pageSize: 12 }),
+  withCategories(),
+  withDevtools('ProductsStore'),
+);
+```
+
+Each store shows up as its own slice under that name, so you can watch `page`, `search` and
+the entity map change live as you click around.
+
+> **Note:** give every store a **unique** `withDevtools` name. Two stores sharing a name
+> overwrite each other in the panel and you end up debugging the wrong state.
+
+Things to be aware of:
+
+- It's not first-party, and it's **dev-mode only** — it strips itself out of production builds.
+- Because there are no real actions, you get state *diffs*, not a meaningful action log.
+  Time-travel debugging won't work.
+- **Angular DevTools** is still the better tool for seeing signal values in the component and
+  injector tree.
 
 ## Useful Links
 
@@ -347,7 +411,7 @@ export const OrdersStore = signalStore({ providedIn: 'root' }, withLoading(), wi
 withMethods((store, service = inject(ProductService)) => ({
   loadOne: rxMethod<number>(
     pipe(
-      // exhaustMap ignores new ids while a request is in flight - handy for submit buttons
+      // switchMap again: if the route id changes mid-request, cancel the old one
       switchMap((id) => service.getById(id).pipe(
         tap((product) => patchState(store, { product })),
         catchError(() => of(null)),   // inner pipe! keeps the stream alive
@@ -401,6 +465,19 @@ Write a `signalStoreFeature` that tracks a selected product id and add it to `Pr
 - Render a spinner (or dim the grid with a CSS class) while `store.isLoading()` is true.
 - Disable the paginator during loading so the user can't queue up requests.
 - Throttle your network in DevTools so you can actually see it.
+
+### Beginner — wire up admin table sorting
+
+`OrdersComponent` (the admin orders table) has an empty `onSortChange(event: any) {}` and a
+`matSortChange` binding that currently goes nowhere.
+
+- Type the parameter properly as `Sort` from `@angular/material/sort`.
+- Forward it to `store.setSortBy()` and `store.setSortDir()`.
+- Confirm the table refetches on its own — you should not have to call any load method.
+
+**Hint:** Material's `Sort` gives you `{ active, direction }`, and `direction` can be `''`
+when sorting is cleared. `matSortDisableClear` is already on the table, so think about whether
+you still need to handle that case.
 
 ### Intermediate — an error state
 

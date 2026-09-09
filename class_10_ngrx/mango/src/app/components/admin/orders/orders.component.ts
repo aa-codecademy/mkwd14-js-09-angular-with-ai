@@ -23,9 +23,15 @@ import { DatePipe } from '@angular/common';
   templateUrl: './orders.component.html',
 })
 export class OrdersComponent {
+  // Injecting the store is all the setup this page needs: the store's onInit already kicked
+  // off the fetch, so there's no ngOnInit and nothing to unsubscribe from here.
   protected readonly store = inject(AdminOrdersStore);
 
+  // mat-table renders columns in THIS array's order, matching each entry to a
+  // matColumnDef of the same name. Forget a name here and that column silently won't render.
   displayedColumns = ['expand', 'id', 'createdAt', 'customer'];
 
+  // TODO (exercise): forward Material's sort event to store.setSortBy/setSortDir.
+  // `any` is a placeholder - type it as Sort from @angular/material/sort when you fill it in.
   onSortChange(event: any) {}
 }
