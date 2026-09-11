@@ -16,7 +16,8 @@ import {
 } from '../../shared/services/admin/admin.order.service';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { withDevtools } from '@ngrx-toolkit/core';
-import { catchError, of, pipe, switchMap, tap } from 'rxjs';
+import { catchError, mergeMap, of, pipe, switchMap, tap } from 'rxjs';
+import { NotificationService } from '../../shared/services/notification.service';
 
 // This store is written the "long way" - state, computed, methods and hooks all inline in one
 // signalStore() call. Read it next to product.feature.ts to see the difference: the same
@@ -73,67 +74,106 @@ export const AdminOrdersStore = signalStore(
     // Material's paginator is 0-based while our state and the API are 1-based.
     pageIndex: computed(() => state.page() - 1),
     pageSizeOptions: computed(() => [10, 25, 50]),
-    statuses: computed(() => ['PENDING', 'SHIPPED', 'CANCELLED']),
+    statuses: computed(() => ['PENDING', 'SHIPPED', 'CANCELLED', 'DELIVERED']),
   })),
   withDevtools('AdminOrdersStore'),
 
-  withMethods((store, orderService = inject(AdminOrderService)) => {
-    // Same rxMethod shape as the products feature: flag loading, switchMap the HTTP call,
-    // write results, and keep catchError on the INNER pipe so an error can't kill the method.
-    const load = rxMethod<AdminOrderQuery>(
-      pipe(
-        tap(() => patchState(store, { loading: true })),
-        switchMap((query) =>
-          orderService.getAll(query).pipe(
-            tap((result) =>
-              patchState(store, setAllEntities(result.data), {
-                total: result.total,
-                loading: false,
+  withMethods(
+    (
+      store,
+      orderService = inject(AdminOrderService),
+      notificationService = inject(NotificationService),
+    ) => {
+      // Same rxMethod shape as the products feature: flag loading, switchMap the HTTP call,
+      // write results, and keep catchError on the INNER pipe so an error can't kill the method.
+      const load = rxMethod<AdminOrderQuery>(
+        pipe(
+          tap(() => patchState(store, { loading: true })),
+          switchMap((query) =>
+            orderService.getAll(query).pipe(
+              tap((result) =>
+                patchState(store, setAllEntities(result.data), {
+                  total: result.total,
+                  loading: false,
+                }),
+              ),
+              catchError(() => {
+                patchState(store, { loading: false });
+                return of(null);
               }),
             ),
-            catchError(() => {
-              patchState(store, { loading: false });
-              return of(null);
-            }),
           ),
         ),
-      ),
-    );
+      );
 
-    return {
-      _load: load,
-      // Any filter change also resets to page 1 - otherwise you could sit on page 4 of a
-      // result set that now only has one page.
-      setStatusFilter(status: OrderStatus | null) {
-        patchState(store, { status, page: 1 });
-      },
-      setSortBy(sortBy: string) {
-        patchState(store, { sortBy });
-      },
-      setSortDir(sortDir: SortDirection) {
-        patchState(store, { sortDir });
-      },
-      // This setter takes Material's 0-based index and converts at the boundary, so the rest
-      // of the store only ever deals in 1-based pages.
-      setPage(pageIndex: number) {
-        patchState(store, { page: pageIndex + 1 });
-      },
-      setPageSize(pageSize: number) {
-        patchState(store, { pageSize });
-      },
-      updateStatus(order: Order, status: OrderStatus) {
-        console.log(order.status, status);
-      },
+      const updateStatus = rxMethod<{ order: Order; newStatus: OrderStatus }>(
+        pipe(
+          tap(() => patchState(store, { loading: true })),
+          switchMap(({ order, newStatus }) =>
+            orderService.updateStatus(order, newStatus).pipe(
+              tap(() => notificationService.showSuccess('Order status successfully updated!')),
+              catchError((error) => {
+                patchState(store, { loading: false });
+                notificationService.showError(
+                  error.error.message || 'Error while updating order status.',
+                );
+                return of(null);
+              }),
+            ),
+          ),
+          mergeMap((result) => {
+            if (result !== null) {
+              return orderService.getAll(store.query()).pipe(
+                tap((result) =>
+                  patchState(store, setAllEntities(result.data), {
+                    total: result.total,
+                    loading: false,
+                  }),
+                ),
+                catchError(() => {
+                  patchState(store, { loading: false });
+                  return of(null);
+                }),
+              );
+            }
+            return of(null);
+          }),
+        ),
+      );
 
-      setExpanded(id: number) {
-        if (store.expandedId() === id) {
-          patchState(store, { expandedId: null });
-        } else {
-          patchState(store, { expandedId: id });
-        }
-      },
-    };
-  }),
+      return {
+        _load: load,
+        // Any filter change also resets to page 1 - otherwise you could sit on page 4 of a
+        // result set that now only has one page.
+        setStatusFilter(status: OrderStatus | null) {
+          patchState(store, { status, page: 1 });
+        },
+        setSortBy(sortBy: string) {
+          patchState(store, { sortBy });
+        },
+        setSortDir(sortDir: SortDirection) {
+          patchState(store, { sortDir });
+        },
+        // This setter takes Material's 0-based index and converts at the boundary, so the rest
+        // of the store only ever deals in 1-based pages.
+        setPage(pageIndex: number) {
+          patchState(store, { page: pageIndex + 1 });
+        },
+        setPageSize(pageSize: number) {
+          patchState(store, { pageSize });
+        },
+        updateStatus,
+
+        setExpanded(id: number) {
+          if (store.expandedId() === id) {
+            patchState(store, { expandedId: null });
+          } else {
+            patchState(store, { expandedId: id });
+          }
+        },
+      };
+    },
+  ),
 
   withHooks({
     onInit(store) {

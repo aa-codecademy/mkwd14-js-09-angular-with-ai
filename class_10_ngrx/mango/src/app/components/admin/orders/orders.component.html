@@ -7,6 +7,16 @@
     <a mat-stroked-button routerLink="/admin"><mat-icon>inventory_2</mat-icon>Products</a>
   </div>
 
+  <mat-form-field appearance="outline">
+    <mat-label>Status</mat-label>
+    <mat-select [value]="store.status()" (valueChange)="store.setStatusFilter($event)">
+      <mat-option [value]="''">All statuses</mat-option>
+      @for (status of store.statuses(); track status) {
+        <mat-option [value]="status">{{ status }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
   <div class="table-scroll">
     <table
       mat-table
@@ -88,7 +98,7 @@
               mat-flat-button
               color="primary"
               type="button"
-              (click)="store.updateStatus(order, 'SHIPPED')"
+              (click)="store.updateStatus({ order, newStatus: 'SHIPPED' })"
             >
               Accept &amp; ship
             </button>
@@ -97,7 +107,7 @@
               color="warn"
               type="button"
               class="cancel-red-button"
-              (click)="store.updateStatus(order, 'CANCELED')"
+              (click)="store.updateStatus({ order, newStatus: 'CANCELLED' })"
             >
               Cancel
             </button>
@@ -106,12 +116,10 @@
               mat-flat-button
               color="primary"
               type="button"
-              (click)="store.updateStatus(order, 'SHIPPED')"
+              (click)="store.updateStatus({ order, newStatus: 'DELIVERED' })"
             >
               Mark as delivered
             </button>
-          } @else if (order.status === 'DELIVERED') {
-            <button mat-flat-button disabled color="primary" type="button">Delivered</button>
           }
         </td>
       </ng-container>
@@ -150,4 +158,13 @@
       <tr mat-row *matRowDef="let row; columns: ['detail']" class="detail-row"></tr>
     </table>
   </div>
+
+  <app-pagination
+    [page]="store.page()"
+    [pageSize]="store.pageSize()"
+    [total]="store.total()"
+    [pageSizeOptions]="store.pageSizeOptions()"
+    (pageChange)="store.setPage($event)"
+    (pageSizeChange)="store.setPageSize($event)"
+  />
 </div>

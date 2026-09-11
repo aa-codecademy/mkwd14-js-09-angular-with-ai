@@ -2,7 +2,7 @@ import type { Product } from './product.model';
 
 // A union of string literals instead of an enum: no runtime code is generated, and TypeScript
 // still stops you from typing 'PAYED' anywhere an OrderStatus is expected.
-export type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'CANCELED';
+export type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'CANCELLED';
 
 export interface OrderItem {
   id: number;

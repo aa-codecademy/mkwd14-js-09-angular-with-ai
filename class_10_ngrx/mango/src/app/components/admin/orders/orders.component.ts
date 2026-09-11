@@ -4,9 +4,13 @@ import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatAnchor, MatIconButton } from '@angular/material/button';
 import { MatTable, MatTableModule } from '@angular/material/table';
-import { MatSortModule } from '@angular/material/sort';
+import { MatSortModule, type Sort } from '@angular/material/sort';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import type { OrderItem } from '../../../core/models/order.model';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import type { SortDirection } from '../../../core/types/sort-direction.type';
 
 @Component({
   imports: [
@@ -19,6 +23,9 @@ import type { OrderItem } from '../../../core/models/order.model';
     MatIconButton,
     DatePipe,
     CurrencyPipe,
+    MatFormFieldModule,
+    MatSelectModule,
+    PaginationComponent,
   ],
   selector: 'app-orders',
   styleUrl: './orders.component.css',
@@ -45,7 +52,10 @@ export class OrdersComponent {
 
   // TODO (exercise): forward Material's sort event to store.setSortBy/setSortDir.
   // `any` is a placeholder - type it as Sort from @angular/material/sort when you fill it in.
-  onSortChange(event: any) {}
+  onSortChange(event: Sort) {
+    this.store.setSortBy(event.active);
+    this.store.setSortDir(event.direction as SortDirection);
+  }
 
   itemCount(items: OrderItem[] = []): number {
     return items.reduce((sum, item) => sum + item.quantity, 0);
