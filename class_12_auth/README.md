@@ -1,516 +1,405 @@
-# Class 10 — NgRx Signal Store
+# Class 12 — Authentication with JWT
 
-Welcome to state management! Up to now every page owned its own signals, its own loading flag, and its own subscriptions — and you saw how quickly that gets repetitive once a page has search, filters, sorting and pagination all talking to each other. In this class you'll pull that whole mess out of the component and into an **NgRx Signal Store**: one injectable object that holds the state, derives values from it, runs the HTTP calls, and refetches automatically when anything changes. By the end, the products page is a component with a single line of logic in it.
+Your app can list products, filter them and manage orders — but right now anyone can do all of it, and the app has no idea who is using it. In this class you add **authentication**: the user logs in, the server hands back a **JWT**, you store it, and the whole UI reacts to it. You'll build an `AuthStore` on top of the signal store you already know, split token persistence into its own reusable feature, decode the token to find out who the user is, and make the navbar change by itself the moment someone signs in or out.
 
 ## Table of Contents
 
 - [Core Concepts covered in this class](#core-concepts-covered-in-this-class)
-  - [Why a store at all?](#why-a-store-at-all)
-  - [signalStore](#signalstore)
-  - [withState](#withstate)
-  - [patchState](#patchstate)
-  - [withComputed](#withcomputed)
-  - [withMethods](#withmethods)
-  - [withHooks](#withhooks)
-  - [rxMethod](#rxmethod)
-  - [withEntities](#withentities)
-  - [signalStoreFeature](#signalstorefeature)
-  - [Configuring one feature twice](#configuring-one-feature-twice)
-  - [Smart vs. presentational components](#smart-vs-presentational-components)
+  - [Authentication vs. authorization](#authentication-vs-authorization)
+  - [What a JWT actually is](#what-a-jwt-actually-is)
+  - [Access tokens and refresh tokens](#access-tokens-and-refresh-tokens)
+  - [Persisting tokens with a store feature](#persisting-tokens-with-a-store-feature)
+  - [The AuthStore](#the-authstore)
+  - [Derived auth state](#derived-auth-state)
+  - [Decoding the token](#decoding-the-token)
+  - [Returning observables from store methods](#returning-observables-from-store-methods)
+  - [Reacting in the template](#reacting-in-the-template)
+  - [Typing the API contract](#typing-the-api-contract)
 - [Theory](#theory)
-  - [Signal Store vs. classic NgRx Store](#signal-store-vs-classic-ngrx-store)
-  - [The auto-refetch loop](#the-auto-refetch-loop)
-  - [Why switchMap and not mergeMap](#why-switchmap-and-not-mergemap)
-  - [Where catchError goes](#where-catcherror-goes)
-  - [Redux DevTools with withDevtools](#redux-devtools-with-withdevtools)
+  - [Why the client can never be trusted](#why-the-client-can-never-be-trusted)
+  - [localStorage vs. httpOnly cookies](#localstorage-vs-httponly-cookies)
+  - [Surviving a page refresh](#surviving-a-page-refresh)
+  - [What still has to be built](#what-still-has-to-be-built)
 - [Useful Links](#useful-links)
 - [Mini Examples](#mini-examples)
 - [Practice Exercises](#practice-exercises)
 
 ## Core Concepts covered in this class
 
-### Why a store at all?
+### Authentication vs. authorization
 
-Look at the class_06 version of the products page and count what the component had to manage: a signal per filter, a `Subject` for the search box, a `debounceTime` pipeline, a `Subscription` to clean up in `ngOnDestroy`, and a "reload" call after every setter. None of that is *product list* logic — it's state plumbing.
+**Authentication** answers "who are you?" — the login form, the password check, the token.
+**Authorization** answers "what are you allowed to do?" — can this user open `/admin`, can they delete a product.
 
-**Why it exists:** a store gives that plumbing one home. State lives in one place, the rules that change it live next to it, and the component goes back to doing what components are for — rendering. You also get it for free everywhere: inject the same store in another component and you see the same data.
+**Why it matters:** students constantly mix these up and then write bugs like "the user is logged in, so show the admin panel". Being logged in is not the same as being an admin. In this app authentication gives you `isLoggedIn()`, and the `role` on the user is what drives authorization.
 
 ```ts
-// Before: the component owns everything
-page = signal(1);
-products = signal<Product[]>([]);
-ngOnInit() { this.load(); }
-setPage(p: number) { this.page.set(p); this.load(); } // easy to forget the load()
+// authentication: do we know who this is?
+if (store.isLoggedIn()) { /* ... */ }
 
-// After: the component owns nothing
-protected readonly store = inject(ProductsStore);
+// authorization: is this person allowed to do the thing?
+if (store.currentUser()?.role === 'ADMIN') { /* ... */ }
 ```
 
-### signalStore
+### What a JWT actually is
 
-`signalStore()` creates an injectable class out of a list of **features**. You don't write a class body — you compose one.
+A JSON Web Token is three Base64 strings joined by dots: `header.payload.signature`. The **payload** holds claims about the user (id, email, role, expiry). The **signature** is what the server computed with a secret only it knows.
 
-**Why it exists:** state management libraries traditionally make you write a lot of ceremony (actions, reducers, selectors, effects) before anything works. `signalStore` collapses that into one declaration whose parts are ordinary signals underneath, so it plugs straight into Angular's change detection.
+**Mental model:** a JWT is a *signed note*, not a *locked box*. Anyone who has the token can read the payload — paste one into [jwt.io](https://jwt.io) and see for yourself. What they cannot do is change it, because they can't recreate the signature.
 
 ```ts
-export const CounterStore = signalStore(
-  { providedIn: 'root' },      // app-wide singleton
-  withState({ count: 0 }),
-  withMethods((store) => ({
-    increment: () => patchState(store, { count: store.count() + 1 }),
-  })),
-);
+// The three parts, split apart by hand just to see what's in there:
+const [header, payload, signature] = token.split('.');
+console.log(JSON.parse(atob(payload)));
+// { sub: 7, email: 'ana@mango.dev', role: 'ADMIN', iat: 1757500000, exp: 1757503600 }
 ```
 
-> **Note:** `{ providedIn: 'root' }` means one shared instance for the whole app — your filters survive navigating away and back. Leave it out and you must list the store in a component's `providers`, which gives every component instance its own fresh copy. Pick deliberately.
+> **Note:** because the payload is readable by anyone, never put anything secret in a JWT — no passwords, no private data.
 
-### withState
+### Access tokens and refresh tokens
 
-`withState()` takes a plain object and turns **each top-level key into its own signal** on the store.
+The **access token** is short-lived (minutes) and gets sent with every request. The **refresh token** is long-lived (days) and does exactly one thing: exchange it for a new access token.
 
-**Why it exists:** if the whole state were one big signal, every component reading any part of it would re-render when anything changed. Splitting per key means a component that only reads `page` ignores changes to `search`.
+**Why two?** If a token leaks, you want the damage window small — hence the short expiry. But asking the user to log in every 15 minutes is awful, so the refresh token quietly renews the session in the background.
 
 ```ts
-withState({ page: 1, search: '' })
-// store.page   -> Signal<number>   read it as store.page()
-// store.search -> Signal<string>   read it as store.search()
+export type TokenState = {
+  accessToken: string | null;  // sent on every API call
+  refreshToken: string | null; // only used against /auth/refresh
+};
 ```
 
-> **Note:** always type your state (`const initialState: MyState = {...}`). Without it TypeScript infers `page: number` but also narrows things like `categoryId: null` to the literal type `null`, and you won't be able to assign a number later.
+### Persisting tokens with a store feature
 
-### patchState
+`withTokenStorage()` is a `signalStoreFeature` whose entire job is "where do tokens live". It reads `localStorage` for its initial state and writes to it on every change.
 
-`patchState()` is the only way to change store state from outside. Pass the store plus one or more partial objects / updater functions.
-
-**Why it exists:** it applies all your changes as **one atomic update**. Set `total` and `entities` in two separate calls and subscribers briefly see the new list with the old total — one `patchState` and they only ever see a consistent state.
+**Why a separate feature:** the `AuthStore` never touches `localStorage` directly. If you later move to cookies or `sessionStorage`, you edit one file and nothing else in the app notices.
 
 ```ts
-patchState(store, { isLoading: true });
-patchState(store, { search, page: 1 });              // both change together
-patchState(store, setAllEntities(items), { total }); // updater + partial in one shot
-```
-
-> **Note:** you cannot `store.page.set(2)` — store signals are read-only from the outside. That restriction is a feature: every state change has to go through a named method you can read, test, and log.
-
-### withComputed
-
-`withComputed()` adds derived signals. It receives the state signals and returns an object of `computed()`s.
-
-**Why it exists:** derived data should never be stored. If you kept `hasActiveFilters` as a state field you'd have to remember to update it in five different setters — and one day you'd forget. A `computed` recalculates itself, lazily, only when its inputs change.
-
-```ts
-withComputed((state) => ({
-  hasActiveFilters: computed(() => state.search() !== '' || state.categoryId() !== null),
-  pageCount: computed(() => Math.ceil(state.total() / state.pageSize())),
-}))
-```
-
-### withMethods
-
-`withMethods()` adds the store's public API — the named operations that change state.
-
-**Why it exists:** it's where business rules live. `setPage` clamps the page between 1 and `totalPages`, so an invalid page is *impossible to reach* no matter which component calls it. Rules in a store apply everywhere; rules in a component apply once.
-
-```ts
-withMethods((store, productService = inject(ProductService)) => ({
-  setPage(page: number) {
-    patchState(store, { page: Math.min(Math.max(page, 1), store.totalPages()) });
-  },
-}))
-```
-
-> **Note:** that `productService = inject(...)` default parameter is not a style quirk — it's the trick that makes DI work. `inject()` only runs inside an injection context, and the `withMethods` factory is one. Calling `inject()` inside a returned method throws.
-
-### withHooks
-
-`withHooks()` is the store's lifecycle: `onInit` runs when the store is first created, `onDestroy` when it's torn down.
-
-**Why it exists:** something has to kick off the initial load. Putting it in the store instead of a component's `ngOnInit` means the data loads no matter *which* component injects the store first.
-
-```ts
-withHooks({
-  onInit(store) { store._load(store.query); },
-  onDestroy() { console.log('store gone'); },
-})
-```
-
-### rxMethod
-
-`rxMethod()` wraps an RxJS pipeline into a callable method. The magic: you can call it with a **signal**, and it re-runs the pipeline every time that signal changes.
-
-**Why it exists:** it's the bridge between the signal world (your state) and the RxJS world (HTTP, debouncing, cancellation). It also manages the subscription for you and tears it down with the store — no `ngOnDestroy`, no `Subscription` field, no leak.
-
-```ts
-const load = rxMethod<ProductQuery>(
-  pipe(
-    tap(() => patchState(store, { isLoading: true })),
-    switchMap((query) => service.getAll(query).pipe(
-      tap((res) => patchState(store, setAllEntities(res.data), { isLoading: false })),
-      catchError(() => { patchState(store, { isLoading: false }); return of(null); }),
-    )),
-  ),
-);
-
-load(store.query);        // signal  -> re-runs forever, on every change
-load({ page: 1 });        // value   -> runs once
-```
-
-### withEntities
-
-`withEntities<T>()` stores a collection in **normalized** form — an `entityMap` keyed by id plus an `ids` array — and exposes `entities()` as a signal of the list.
-
-**Why it exists:** updating one item in a plain array means finding it and rebuilding the array. With a map it's a single key write. You also get ready-made updaters instead of writing them yourself.
-
-```ts
-withEntities<Product>()
-// store.entities()  -> Product[]
-// store.entityMap() -> Record<number, Product>
-// store.ids()       -> number[]
-
-patchState(store, setAllEntities(products));           // replace everything
-patchState(store, addEntity(product));                 // append one
-patchState(store, updateEntity({ id: 3, changes: { stock: 0 } }));
-patchState(store, removeEntity(3));
-```
-
-> **Note:** entities default to an `id` property. If your model uses something else, pass a selector: `withEntities<User>()` + `setAllEntities(users, { selectId: (u) => u.uuid })`.
-
-### signalStoreFeature
-
-`signalStoreFeature()` bundles state + computed + methods + hooks into a reusable unit you plug into any store. It's the same composition idea as a mixin.
-
-**Why it exists:** without it, a store with search, filters, pagination, sorting and categories becomes one 300-line file. Features let you split by concern (`withProductQuery`, `withCategories`) and test each piece on its own. Wrapping the feature in a function also lets you accept **config**:
-
-```ts
-export function withPageSize(defaultSize = 12) {
+export function withTokenStorage() {
   return signalStoreFeature(
-    withState({ pageSize: defaultSize }),
+    // read on startup - this single line is what survives a page refresh
+    withState<TokenState>({
+      accessToken: localStorage.getItem(ACCESS_TOKEN_KEY),
+      refreshToken: localStorage.getItem(REFRESH_TOKEN_KEY),
+    }),
     withMethods((store) => ({
-      setPageSize: (pageSize: number) => patchState(store, { pageSize, page: 1 }),
+      setTokens(accessToken: string, refreshToken: string): void {
+        patchState(store, { accessToken, refreshToken }); // signals -> UI updates now
+        localStorage.setItem(ACCESS_TOKEN_KEY, accessToken); // disk -> survives reload
+        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      },
+      clearTokens() {
+        patchState(store, { accessToken: null, refreshToken: null });
+        localStorage.removeItem(ACCESS_TOKEN_KEY);
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
+      },
     })),
   );
 }
-
-// then: signalStore({ providedIn: 'root' }, withPageSize(24))
 ```
 
-> **Note:** feature order matters. Features apply top to bottom, and a later one can read what earlier ones added — but not the other way round.
+> **Note:** always write both places. Update only the signal and the user is logged out again after a refresh; update only `localStorage` and the navbar never changes.
 
-### Configuring one feature twice
+### The AuthStore
 
-Because `withProductQuery` is a *function* that takes config, you can build two completely
-different stores out of it. `ProductsStore` (the shop) and `AdminProductsStore` (the admin
-table) both plug in the same feature — one with 12 items per page sorted by newest, the other
-with 10 sorted by name.
+`AuthStore` composes the token feature with the user state and the login/register/logout methods.
 
-**Why it exists:** this is the whole reason config goes in a function parameter instead of in
-state. Config is chosen once by whoever builds the store, so it never has to be a signal and
-it never has to be duplicated per store.
+**Why `providedIn: 'root'`:** auth *must* be a singleton. If every component got its own instance, logging in on the login page would not log you in on the navbar.
 
 ```ts
-export const ProductsStore = signalStore(
+export const AuthStore = signalStore(
   { providedIn: 'root' },
-  withProductQuery({ pageSize: 12 }),                                    // shop defaults
-  withCategories(),
-  withDevtools('ProductsStore'),
-);
-
-export const AdminProductsStore = signalStore(
-  { providedIn: 'root' },
-  withProductQuery({ pageSize: 10, sortBy: 'name', sortDir: 'asc' }),    // admin defaults
-  withCategories(),
-  // extra computed, layered on top of what the feature already added
-  withComputed(({ entities }) => ({
-    outOfStockCount: computed(() => entities().filter((p) => p.stock === 0).length),
-  })),
-  withDevtools('AdminProductsStore'),
+  withTokenStorage(),          // contributes accessToken + setTokens/clearTokens
+  withState<AuthState>({ user: null }),
+  withComputed(/* ... */),
+  withMethods(/* ... */),
 );
 ```
 
-> **Note:** two stores built from the same feature are still two *separate* instances with
-> separate state. Filtering the admin table does not touch the shop page.
+Feature order matters: `withTokenStorage()` comes first, so everything below it can use `store.setTokens()` and read `accessToken()`.
 
-### Smart vs. presentational components
+### Derived auth state
 
-`ProductListComponent` injects the store and knows all about it — that's a **smart** (container) component. `PaginationComponent` takes plain numbers in via `input()` and emits plain numbers out via `output()`, and has never heard of a store — that's a **presentational** (dumb) component.
+`isLoggedIn` is **not** a stored boolean. It's a computed signal derived from the token.
 
-**Why it exists:** the paginator stays reusable precisely *because* it doesn't know where its data comes from. Wire a store into it and you can only ever use it with that one store.
+**Why:** two pieces of state that must agree will eventually disagree. Derive one from the other and the bug becomes impossible.
 
 ```ts
-// dumb: inputs in, outputs out
-page = input.required<number>();
-pageChange = output<number>();
+withComputed(({ accessToken, user }) => ({
+  isLoggedIn: computed<boolean>(() => !!accessToken()),
+  // fall back to the token when we have no user object (i.e. after a refresh)
+  currentUser: computed<User | null>(() => user() ?? decodeToken(accessToken())),
+}))
 ```
+
+### Decoding the token
+
+After a page refresh the token is still in `localStorage`, but the `user` object is gone — it only ever lived in memory. `jwt-decode` rebuilds a partial user from the token's claims.
+
+```ts
+function decodeToken(token: string | null): User | null {
+  if (!token) return null;
+  try {
+    const payload = jwtDecode<TokenPayload>(token); // reads only - does NOT verify
+    return { id: payload.sub, email: payload.email, role: payload.role,
+             firstName: '', lastName: '', createdAt: '' };
+  } catch {
+    return null; // a tampered or garbage token must not crash the app
+  }
+}
+```
+
+> **Note:** `jwtDecode` does not check the signature. Never make a security decision on the client based on a decoded token — use it to pick which UI to show, and let the server enforce the rules.
+
+### Returning observables from store methods
+
+`login()` returns the observable instead of subscribing inside the store.
+
+**Why:** the store owns the *state* effect (saving tokens, via `tap`), the component owns the *UI* effect (toast, navigation) — and, crucially, the component can handle the error. A store that subscribes internally swallows failures.
+
+```ts
+login(body: Login) {
+  return authService.login(body).pipe(
+    tap((res) => {
+      store.setTokens(res.accessToken, res.refreshToken);
+      patchState(store, { user: res.user });
+    }),
+  ); // no .subscribe() here - the caller does that
+}
+```
+
+And in the component:
+
+```ts
+this.store.login(body).subscribe({
+  next: () => this.router.navigate(['/']),
+  error: (err) => this.notificationService.showError(err.error.message),
+});
+```
+
+### Reacting in the template
+
+Nothing in the navbar wires itself to the login form. It just reads signals, and Angular does the rest.
 
 ```html
-<!-- the smart parent connects the two worlds -->
-<app-pagination [page]="store.page()" (pageChange)="store.setPage($event)" />
+@if (store.isLoggedIn()) {
+  <a routerLink="/account">{{ store.currentUser()?.email }}</a>
+  <button mat-icon-button (click)="store.logout()"><mat-icon>logout</mat-icon></button>
+} @else {
+  <a mat-stroked-button routerLink="/login">Login</a>
+}
+```
+
+Two gotchas in three lines: the store field must be **public** (a `private` field is invisible to the template), and `currentUser()?.email` needs the `?.` because the value is `User | null`.
+
+### Typing the API contract
+
+Register returns a user; login returns a user *and* two tokens. Modelling them as one type with optional fields would force `res.accessToken!` at every call site.
+
+```ts
+export type RegisterResponse = { user: User };
+export type LoginResponse = { user: User; accessToken: string; refreshToken: string };
+```
+
+And `UserRole` is a union, not `string` — so `'admin'` (wrong case) fails to compile:
+
+```ts
+export type UserRole = 'USER' | 'ADMIN';
 ```
 
 ## Theory
 
-### Signal Store vs. classic NgRx Store
+### Why the client can never be trusted
 
-You may have seen classic NgRx code — `createAction`, `createReducer`, `createSelector`, `@ngrx/effects`. Both libraries live under the NgRx umbrella but they are **separate implementations**, and this project uses only the signal one.
+Everything in your Angular app runs on the user's machine. They can open DevTools, edit a signal, flip `isLoggedIn` to `true`, and route themselves into `/admin`. And that's fine — because the admin page's data still comes from the API, and the API rejects requests without a valid token.
 
-| | Classic `@ngrx/store` | `@ngrx/signals` |
+Client-side auth decides **what to render**. Server-side auth decides **what is allowed**. A guard that hides the admin link is a usability feature, not a security feature.
+
+### localStorage vs. httpOnly cookies
+
+| | localStorage | httpOnly cookie |
 |---|---|---|
-| State container | One global object tree | Many small stores |
-| Read a value | `store.select(selector)` → Observable | `store.page()` → signal |
-| Change a value | Dispatch an action → reducer | Call a method → `patchState` |
-| Derived data | `createSelector` | `withComputed` |
-| Side effects | `@ngrx/effects` | `rxMethod` |
-| Boilerplate | High | Low |
-| Redux DevTools | Built in | Via `withDevtools()` (see below) |
+| Readable by JS | Yes | No |
+| Vulnerable to XSS token theft | Yes | No |
+| Vulnerable to CSRF | No | Yes (needs SameSite / CSRF tokens) |
+| Sent automatically | No — you attach it yourself | Yes, by the browser |
+| Works across subdomains/APIs | Easily | Needs configuration |
 
-The trade-off is honest: classic NgRx gives you a full audit trail of every action, which is genuinely valuable in a large team. The signal store gives you 80% of the benefit for 20% of the code, which is the right call for most apps.
+This app uses `localStorage` because it's simple to see and debug while learning. Production apps that handle money or personal data usually put the refresh token in an `httpOnly` cookie and keep the access token in memory only. Know the trade-off and be able to explain it in an interview.
 
-### The auto-refetch loop
+### Surviving a page refresh
 
-This is the single most important idea in the class. Follow the chain:
+A page refresh destroys every JavaScript object your app ever created — signals, services, the store, all of it. The only things that survive are what you wrote somewhere durable.
 
-1. The user picks a category → the template calls `store.setCategory(3)`.
-2. `setCategory` does one thing: `patchState(store, { categoryId: 3, page: 1 })`.
-3. The `query` computed reads `categoryId`, so it recomputes.
-4. `_load` was called in `onInit` **with the `query` signal**, so it sees the change and re-runs the pipeline.
-5. `switchMap` cancels any in-flight request and fires the new one.
-6. `setAllEntities` writes the results, the `products()` signal changes, the `@for` block re-renders.
+That's why the flow is:
 
-Nobody called "reload". Every setter in the store is a one-liner that only touches state, and the fetch is a *consequence* of the state changing. That's the difference between imperative ("do this, then reload") and reactive ("state changed, everything downstream follows") — and it's why you can't forget a reload call: there isn't one.
+1. `withTokenStorage()` seeds its state straight from `localStorage` when the store is first constructed.
+2. `isLoggedIn` is computed from that token, so it's already `true` on the first render.
+3. `user` is `null` (it never persisted), so `currentUser` falls back to `decodeToken()`.
 
-### Why switchMap and not mergeMap
+If you ever see a flash of the logged-out navbar on reload, it's because something read the token *asynchronously* instead of during construction.
 
-Type "phone" quickly and you fire five requests. They can come back in any order — and if the response for `"ph"` arrives after the one for `"phone"`, the stale results win and the user sees the wrong list. That's a **race condition**, and it's one of the classic search bugs.
+### What still has to be built
 
-`switchMap` unsubscribes from the previous inner observable when a new value arrives, cancelling the outdated request. Rule of thumb:
+The class ends with a working login, but the picture isn't complete. The pieces you're missing:
 
-| Operator | Behaviour | Use for |
-|---|---|---|
-| `switchMap` | Cancel previous | Search, filters, navigation — anything where only the latest matters |
-| `mergeMap` | Run all in parallel | Independent writes (e.g. fire 5 deletes) |
-| `concatMap` | Queue in order | Ordered writes where sequence matters |
-| `exhaustMap` | Ignore new while busy | Login/submit buttons — swallows double-clicks |
+- An **HTTP interceptor** that attaches `Authorization: Bearer <token>` to outgoing requests. Right now the token is stored but never sent.
+- A **route guard** (`CanActivateFn`) that redirects anonymous users away from `/orders` and non-admins away from `/admin`.
+- **Expiry handling** — `exp` is in the payload and nothing checks it. An expired token currently looks exactly like a valid one to `isLoggedIn`.
+- **Refresh logic** — the refresh token is saved and never used.
 
-### Where catchError goes
-
-Look closely at where `catchError` sits in `product.feature.ts` — **inside** the `switchMap`, on the inner observable:
-
-```ts
-switchMap((query) => service.getAll(query).pipe(
-  catchError(() => of(null)),   // ✅ inner: only this request fails
-))
-```
-
-If you put it on the outer pipe instead, the first failed request errors the whole `rxMethod` stream. An errored observable is **finished** — it will never emit again — so your store would silently stop reacting to filter changes forever. One flaky request would break the page until a refresh.
-
-### Redux DevTools with withDevtools
-
-Signal stores have no actions and no reducers, so the Redux DevTools extension has nothing to
-subscribe to on its own — and `@ngrx/signals` ships no devtools entry point. The community
-package `@ngrx-toolkit/core` fills the gap: it pushes a **state snapshot** into the extension
-every time the store changes.
-
-Two pieces have to line up:
-
-```ts
-// app.config.ts - name the whole app once
-providers: [provideDevtoolsConfig({ name: 'Mango' })]
-```
-
-```ts
-// each store - add the feature LAST, with a unique name
-export const ProductsStore = signalStore(
-  { providedIn: 'root' },
-  withProductQuery({ pageSize: 12 }),
-  withCategories(),
-  withDevtools('ProductsStore'),
-);
-```
-
-Each store shows up as its own slice under that name, so you can watch `page`, `search` and
-the entity map change live as you click around.
-
-> **Note:** give every store a **unique** `withDevtools` name. Two stores sharing a name
-> overwrite each other in the panel and you end up debugging the wrong state.
-
-Things to be aware of:
-
-- It's not first-party, and it's **dev-mode only** — it strips itself out of production builds.
-- Because there are no real actions, you get state *diffs*, not a meaningful action log.
-  Time-travel debugging won't work.
-- **Angular DevTools** is still the better tool for seeing signal values in the component and
-  injector tree.
+Those are the exercises below.
 
 ## Useful Links
 
 | Topic | Link |
 |---|---|
-| NgRx Signals overview | https://ngrx.io/guide/signals |
-| `signalStore` | https://ngrx.io/guide/signals/signal-store |
+| NgRx Signal Store | https://ngrx.io/guide/signals/signal-store |
 | Custom store features | https://ngrx.io/guide/signals/signal-store/custom-store-features |
-| Entity management | https://ngrx.io/guide/signals/signal-store/entity-management |
 | `rxMethod` | https://ngrx.io/guide/signals/rxjs-integration |
-| Store lifecycle hooks | https://ngrx.io/guide/signals/signal-store/lifecycle-hooks |
+| Angular route guards (`CanActivateFn`) | https://angular.dev/api/router/CanActivateFn |
+| Angular HTTP interceptors | https://angular.dev/guide/http/interceptors |
+| Angular `inject()` | https://angular.dev/api/core/inject |
 | Angular signals | https://angular.dev/guide/signals |
-| `computed()` | https://angular.dev/guide/signals#computed-signals |
-| `input()` / `output()` | https://angular.dev/guide/components/inputs |
-| `inject()` and DI | https://angular.dev/guide/di/dependency-injection |
-| RxJS `switchMap` | https://rxjs.dev/api/operators/switchMap |
-| RxJS `debounceTime` | https://rxjs.dev/api/operators/debounceTime |
-| RxJS `catchError` | https://rxjs.dev/api/operators/catchError |
-| Material Paginator | https://material.angular.io/components/paginator |
-| Angular DevTools | https://angular.dev/tools/devtools |
-| ngrx-toolkit (`withDevtools`) | https://ngrx-toolkit.angulararchitects.io/ |
+| Template-driven forms | https://angular.dev/guide/forms/template-driven-forms |
+| `jwt-decode` | https://github.com/auth0/jwt-decode |
+| JWT introduction & debugger | https://jwt.io/introduction |
+| MDN — `localStorage` | https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage |
+| MDN — `Authorization` header | https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization |
+| OWASP — JWT cheat sheet | https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html |
+| Angular Material toolbar | https://material.angular.io/components/toolbar |
 
 ## Mini Examples
 
-### 1. The smallest useful store
+### 1. An auth interceptor
 
 ```ts
-import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
-import { computed } from '@angular/core';
+// Functional interceptor - register it in app.config.ts:
+// provideHttpClient(withInterceptors([authInterceptor]))
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const token = inject(AuthStore).accessToken();
+  if (!token) return next(req); // nothing to attach, pass it through untouched
 
-export const CartStore = signalStore(
-  { providedIn: 'root' },
-  withState({ items: [] as { price: number; qty: number }[] }),
-  withComputed(({ items }) => ({
-    // derived, never stored - it can't fall out of sync
-    total: computed(() => items().reduce((sum, i) => sum + i.price * i.qty, 0)),
-    count: computed(() => items().length),
-  })),
-  withMethods((store) => ({
-    add(item: { price: number; qty: number }) {
-      patchState(store, { items: [...store.items(), item] }); // new array, never .push()
-    },
-    clear: () => patchState(store, { items: [] }),
-  })),
-);
+  // HttpRequest is IMMUTABLE - you must clone it, you cannot mutate headers in place.
+  const authReq = req.clone({
+    setHeaders: { Authorization: `Bearer ${token}` },
+  });
+  return next(authReq);
+};
 ```
 
-### 2. A reusable loading feature
+### 2. A guard that protects a route
 
 ```ts
-// Drop this into any store that talks to an API.
-export function withLoading() {
-  return signalStoreFeature(
-    withState({ isLoading: false, error: null as string | null }),
-    withMethods((store) => ({
-      startLoading: () => patchState(store, { isLoading: true, error: null }),
-      finishLoading: () => patchState(store, { isLoading: false }),
-      failLoading: (error: string) => patchState(store, { isLoading: false, error }),
-    })),
-  );
+export const authGuard: CanActivateFn = (route, state) => {
+  const store = inject(AuthStore);
+  const router = inject(Router);
+
+  if (store.isLoggedIn()) return true;
+
+  // Remember where they were going so login can send them back afterwards.
+  return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+};
+
+// app.routes.ts
+{ path: 'orders', component: OrdersComponent, canActivate: [authGuard] }
+```
+
+### 3. Checking token expiry
+
+```ts
+withComputed(({ accessToken }) => ({
+  isLoggedIn: computed(() => {
+    const token = accessToken();
+    if (!token) return false;
+    try {
+      // exp is in SECONDS, Date.now() is in MILLISECONDS - the classic off-by-1000 bug.
+      const { exp } = jwtDecode<TokenPayload>(token);
+      return exp * 1000 > Date.now();
+    } catch {
+      return false;
+    }
+  }),
+}))
+```
+
+### 4. A role-based directive
+
+```ts
+@Directive({ selector: '[appHasRole]' })
+export class HasRoleDirective {
+  private store = inject(AuthStore);
+  private view = inject(ViewContainerRef);
+  private tpl = inject(TemplateRef<unknown>);
+
+  role = input.required<UserRole>({ alias: 'appHasRole' });
+
+  constructor() {
+    // effect() re-runs whenever currentUser() changes - log out and the element disappears.
+    effect(() => {
+      this.view.clear();
+      if (this.store.currentUser()?.role === this.role()) {
+        this.view.createEmbeddedView(this.tpl);
+      }
+    });
+  }
 }
 
-export const OrdersStore = signalStore({ providedIn: 'root' }, withLoading(), withEntities<Order>());
-```
-
-### 3. rxMethod driven by a route param signal
-
-```ts
-withMethods((store, service = inject(ProductService)) => ({
-  loadOne: rxMethod<number>(
-    pipe(
-      // switchMap again: if the route id changes mid-request, cancel the old one
-      switchMap((id) => service.getById(id).pipe(
-        tap((product) => patchState(store, { product })),
-        catchError(() => of(null)),   // inner pipe! keeps the stream alive
-      )),
-    ),
-  ),
-}))
-
-// in a component - the store refetches whenever the route id changes:
-const id = toSignal(inject(ActivatedRoute).params.pipe(map((p) => Number(p['id']))));
-store.loadOne(id);
-```
-
-### 4. Optimistic entity update
-
-```ts
-withMethods((store, service = inject(ProductService)) => ({
-  toggleFavourite: rxMethod<Product>(
-    pipe(
-      // update the UI immediately, before the server answers - the app feels instant
-      tap((p) => patchState(store, updateEntity({ id: p.id, changes: { favourite: !p.favourite } }))),
-      mergeMap((p) => service.setFavourite(p.id, !p.favourite).pipe(
-        // roll the change back if the request failed
-        catchError(() => {
-          patchState(store, updateEntity({ id: p.id, changes: { favourite: p.favourite } }));
-          return of(null);
-        }),
-      )),
-    ),
-  ),
-}))
+// <a *appHasRole="'ADMIN'" routerLink="/admin">Admin</a>
 ```
 
 ## Practice Exercises
 
-### Beginner — a `withSelection` feature
+### Beginner — hide the Admin link
 
-Write a `signalStoreFeature` that tracks a selected product id and add it to `ProductsStore`.
+The navbar still shows **Admin** to everyone, including logged-out visitors.
 
-- State: `selectedId: number | null`.
-- Computed: `selectedProduct`, derived from `entityMap()` and `selectedId()`.
-- Methods: `select(id)`, `clearSelection()`.
-- In the template, highlight the selected card and show its name above the grid.
+- Wrap the admin link in an `@if` that checks the user's role.
+- Confirm it disappears when you log out and reappears when you log in as an admin.
+- Then open `/admin` by typing the URL directly — it still loads. Explain in one sentence why hiding the link is not security.
 
-**Hint:** read `store.entityMap()[id]` — that's exactly why `withEntities` normalizes the data.
+### Beginner — show the user's name, not their email
 
-### Beginner — show the loading state
+`currentUser()` returns empty strings for `firstName`/`lastName` after a refresh, because the JWT doesn't carry them.
 
-`isLoading` is already in the store and nothing uses it.
+- Display `firstName lastName` when you have it, and fall back to the email when you don't.
+- Verify the difference: log in (full name shows) then hit F5 (fallback shows).
 
-- Render a spinner (or dim the grid with a CSS class) while `store.isLoading()` is true.
-- Disable the paginator during loading so the user can't queue up requests.
-- Throttle your network in DevTools so you can actually see it.
+### Beginner — a logout confirmation
 
-### Beginner — wire up admin table sorting
+- Add a Material dialog or a simple `confirm()` before `store.logout()` runs.
+- Make sure cancelling really does leave the tokens in `localStorage` — check the Application tab in DevTools.
 
-`OrdersComponent` (the admin orders table) has an empty `onSortChange(event: any) {}` and a
-`matSortChange` binding that currently goes nowhere.
+### Intermediate — attach the token to requests
 
-- Type the parameter properly as `Sort` from `@angular/material/sort`.
-- Forward it to `store.setSortBy()` and `store.setSortDir()`.
-- Confirm the table refetches on its own — you should not have to call any load method.
+Right now you store a token and never send it.
 
-**Hint:** Material's `Sort` gives you `{ active, direction }`, and `direction` can be `''`
-when sorting is cleared. `matSortDisableClear` is already on the table, so think about whether
-you still need to handle that case.
+- Write the `authInterceptor` from the mini examples and register it in `app.config.ts`.
+- Confirm in the Network tab that `Authorization: Bearer ...` appears on API calls.
+- Make sure it does **not** attach the token to `/auth/login` and `/auth/register` — sending a stale token to the login endpoint is at best pointless.
 
-### Intermediate — an error state
+**Hint:** `req.url` tells you which endpoint you're intercepting.
 
-Right now a failed request silently leaves an empty grid.
+### Intermediate — guard the protected routes
 
-- Add `error: string | null` to `ProductQueryState`.
-- Set it in the `catchError` block, and clear it whenever a load starts.
-- Show a message with a **Retry** button. Retrying should re-trigger the fetch — figure out how to do that *without* duplicating the load pipeline.
-- Verify that after an error the filters still work. (If they stop working, check where you put `catchError`.)
+- Add `authGuard` to `/orders` and an `adminGuard` to the `/admin` children.
+- After a redirect to login, send the user back to where they originally wanted to go (use the `returnUrl` query param).
+- Handle the edge case: a logged-in non-admin hitting `/admin` should get a "not allowed" message, not an infinite redirect loop.
 
-### Intermediate — persist the query in the URL
+### Intermediate — handle expired tokens
 
-Make filters shareable and survivable across refreshes.
+- Extend `isLoggedIn` to check `exp`, as in mini example 3.
+- On app start, clear the tokens if the stored one is already expired.
+- Test it by asking the backend for a token with a very short expiry, or by hand-editing `exp` in `localStorage` and reloading.
 
-- On every state change, write `search`, `categoryId`, `page`, `sortBy`, `sortDir` into the query string with `router.navigate([], { queryParams, replaceUrl: true })`.
-- On store init, read them back and seed the state.
-- Confirm that copying the URL into a new tab reproduces the exact same view.
+### Challenge — refresh the token automatically
 
-**Hint:** an `effect()` inside `withHooks.onInit` can watch the `query` computed. Watch out for a feedback loop where the URL update re-triggers a state update.
+The refresh token is saved and never used. Make it earn its keep.
 
-### Challenge — a generic `withQuery` feature
+- Add a `refresh()` method to `AuthStore` that posts the refresh token to `/auth/refresh` and stores the new pair.
+- In the interceptor, catch `401` responses, call `refresh()`, and **retry the original request** with the new token.
+- Handle the hard part: if five requests fail at once, you must refresh **once**, not five times. Queue the others until the refresh resolves.
+- If the refresh itself fails, log the user out and send them to `/login`.
 
-Generalize `withProductQuery` so it works for *any* entity, not just products.
-
-```ts
-export function withQuery<T extends { id: number }, Q>(config: {
-  fetch: (query: Q) => Observable<{ data: T[]; total: number; totalPages: number }>;
-  buildQuery: (state: /* ... */) => Q;
-}) { /* ... */ }
-```
-
-- Use it to build both a `ProductsStore` and an `OrdersStore` with no duplicated pagination logic.
-- Keep it fully type-safe — no `any`.
-- Write a test with `TestBed` that asserts `setPage(999)` clamps to `totalPages`.
-
-**Hint:** generic signal store features are genuinely tricky; read the "Custom Store Features" guide and expect to fight TypeScript for a while. That fight is the exercise.
+**Hint:** `catchError` + `switchMap` in the interceptor, plus a shared in-flight observable so concurrent 401s wait on the same refresh. Expect this one to take a while — that's the point.

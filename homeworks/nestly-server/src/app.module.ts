@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { StaysModule } from './stays/stays.module';
 import { SeedModule } from './seed/seed.module';
 import { Stay } from './stays/stay.entity';
+import { AuthModule } from './auth/auth.module';
+import { User } from './auth/entities/user.entity';
 
 @Module({
   imports: [
@@ -20,10 +22,11 @@ import { Stay } from './stays/stay.entity';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [Stay],
+        entities: [Stay, User],
         synchronize: true,
       }),
     }),
+    AuthModule,
     StaysModule,
     SeedModule,
   ],

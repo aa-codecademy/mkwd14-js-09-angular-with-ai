@@ -32,6 +32,8 @@ import { AuthStore } from '../../../store/auth/auth.store';
   styleUrl: './register.component.css',
 })
 export class RegisterComponent {
+  // Register goes through the store too, for consistency - even though it changes no
+  // state, components shouldn't need to know which calls happen to be stateful.
   private store = inject(AuthStore);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
@@ -62,6 +64,8 @@ export class RegisterComponent {
       password: this.model.password,
     };
     this.store.register(body).subscribe({
+      // No tokens come back from register, so the user is still logged OUT here -
+      // that's why we send them to /login instead of straight to the home page.
       next: (res) => {
         this.notificationService.showSuccess(
           `User: ${res.user.firstName} ${res.user.lastName} has been successfully registered!`,

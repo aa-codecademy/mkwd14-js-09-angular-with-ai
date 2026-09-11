@@ -15,13 +15,14 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Nestly API')
     .setDescription(
-      'Homework 3 backend — a small public API for the Nestly app. ' +
-        'Every route here is public (no authentication yet); use it to swap your hardcoded ' +
-        '`stays` array for real HTTP calls with Angular\'s HttpClient.',
+      'Backend for the Nestly homeworks. Reading stays is public; creating/updating a stay ' +
+        'requires a logged-in user and deleting one requires an ADMIN (Homework 6).',
     )
     .setVersion('1.0')
     .addTag('stays', 'CRUD operations for stay listings')
     .addTag('seed', 'Fill (or reset) the database with sample data')
+    .addTag('auth', 'Register, log in, refresh, log out')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);

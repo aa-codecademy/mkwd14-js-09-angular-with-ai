@@ -29,6 +29,17 @@ export class SeedController {
     return this.seedService.reset();
   }
 
+  @Post('users')
+  @ApiOperation({
+    summary: 'Seed the two demo accounts',
+    description:
+      'Creates admin@nestly.dev (role ADMIN) and user@nestly.dev (role USER), both with the ' +
+      'password `password123`. Safe to call more than once — existing emails are skipped.',
+  })
+  seedUsers() {
+    return this.seedService.seedUsers();
+  }
+
   @Get('status')
   @ApiOperation({ summary: 'Check how many stays currently exist in the database' })
   status() {

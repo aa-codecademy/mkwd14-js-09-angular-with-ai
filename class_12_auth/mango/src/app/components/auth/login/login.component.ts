@@ -30,6 +30,8 @@ import { AuthStore } from '../../../store/auth/auth.store';
 })
 export class LoginComponent {
   // inject() instead of a constructor parameter - same DI, less boilerplate.
+  // The component talks to the STORE, not to AuthService directly. That way the token
+  // gets saved no matter which screen triggered the login.
   private store = inject(AuthStore);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
@@ -56,7 +58,8 @@ export class LoginComponent {
       password: this.model.password,
     };
 
-    // HTTP observables are cold: nothing is sent until you subscribe.
+    // HTTP observables are cold: nothing is sent until you subscribe. The store already
+    // stored the tokens inside tap() by the time this next callback runs.
     this.store.login(body).subscribe({
       next: (user) => {
         this.notificationService.showSuccess(`You are successfully logged in!`);

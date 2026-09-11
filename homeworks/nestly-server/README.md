@@ -1,17 +1,28 @@
-# Nestly API (Homework 3 backend)
+# Nestly API (backend for Homework 3 and Homework 6)
 
 A small NestJS + PostgreSQL API that serves `Stay` data for the Nestly app. It's the backend
 you'll call from Angular's `HttpClient` in [Homework 3](../hmw_3.md) instead of using a
 hardcoded array.
 
-Every route is **public** — there is no authentication in this project (that comes later in the
-course). This keeps Homework 3 focused purely on HTTP calls.
+**Reading stays is public**, so Homework 3 stays focused purely on HTTP calls. The write routes
+are protected with JWT auth — that's what [Homework 6](../hmw_6.md) is about.
 
 ## What's in here
 
+- `auth` — register, login, refresh, logout, me (JWT access + refresh tokens, roles `USER`/`ADMIN`)
 - `stays` — full CRUD for stay listings (`GET`, `GET /:id`, `POST`, `PUT /:id`, `DELETE /:id`)
-- `seed` — endpoints to fill the database with sample stays so you have real data immediately
+- `seed` — endpoints to fill the database with sample stays and the two demo accounts
 - Swagger docs at `/api/docs` describing every route, query param and request/response shape
+
+### Who may do what
+
+| Route | Who |
+| --- | --- |
+| `GET /api/stays`, `GET /api/stays/:id` | Anyone, no token needed |
+| `POST /api/stays`, `PUT /api/stays/:id` | Any logged-in user (`USER` or `ADMIN`) — otherwise `401` |
+| `DELETE /api/stays/:id` | `ADMIN` only — a logged-in `USER` gets `403` |
+| `GET /api/auth/me`, `POST /api/auth/logout` | Any logged-in user |
+| everything under `seed` | Anyone (it's a dev helper) |
 
 ## 1. Prerequisites
 
@@ -116,10 +127,27 @@ Other seed endpoints:
 | --- | --- | --- |
 | `/api/seed/stays` | `POST` | Insert sample stays (skips ones that already exist) |
 | `/api/seed/stays` | `DELETE` | **Wipe every stay** and re-insert the sample data fresh |
-| `/api/seed/status` | `GET` | Check how many stays currently exist in the database |
+| `/api/seed/users` | `POST` | Create the two demo accounts (skips ones that already exist) |
+| `/api/seed/status` | `GET` | Check how many stays and users currently exist in the database |
 
 Use `DELETE /api/seed/stays` any time you've been creating/editing/deleting stays from your
 Angular app while testing and want a clean slate again.
+
+## 5b. Seed the demo accounts
+
+```bash
+curl -X POST http://localhost:3000/api/seed/users
+```
+
+This creates two accounts you can log in with immediately:
+
+| Email | Password | Role |
+| --- | --- | --- |
+| `admin@nestly.dev` | `password123` | `ADMIN` |
+| `user@nestly.dev` | `password123` | `USER` |
+
+Anyone registering through `POST /api/auth/register` always gets the role `USER` — you can't
+promote yourself to admin from the outside.
 
 ## 6. Explore the API
 
@@ -133,6 +161,30 @@ Once seeded, try these in the browser, Postman, or straight from Angular:
 - `POST http://localhost:3000/api/stays` — create a stay (see Swagger for the request body)
 - `PUT http://localhost:3000/api/stays/1` — update a stay
 - `DELETE http://localhost:3000/api/stays/1` — delete a stay
+
+Auth endpoints:
+
+- `POST http://localhost:3000/api/auth/register` — `{ email, password, firstName, lastName }` → `{ user, accessToken, refreshToken }`
+- `POST http://localhost:3000/api/auth/login` — `{ email, password }` → `{ user, accessToken, refreshToken }`
+- `POST http://localhost:3000/api/auth/refresh` — `{ refreshToken }` → a **new** `{ user, accessToken, refreshToken }` pair
+- `POST http://localhost:3000/api/auth/logout` — needs `Authorization: Bearer <accessToken>`; invalidates the stored refresh token
+- `GET http://localhost:3000/api/auth/me` — needs `Authorization: Bearer <accessToken>` → the current user
+
+For the protected routes, send the access token as a header:
+
+```bash
+curl -X DELETE http://localhost:3000/api/stays/1 \
+  -H "Authorization: Bearer <accessToken>"
+```
+
+> **Token lifetimes.** The access token expires after **60 seconds** by default
+> (`JWT_ACCESS_EXPIRES_IN` in `.env`) — deliberately short, so you can actually watch your
+> refresh logic run instead of wondering whether it works. The refresh token lasts 7 days.
+> `POST /auth/refresh` **rotates** the refresh token: the old one stops working the moment you
+> use it, so always store the new one you get back.
+
+In Swagger, click **Authorize** (top right) and paste an access token to try the protected
+routes from the browser.
 
 Full request/response shapes, query parameters, and example payloads are all documented in
 Swagger at `/api/docs` — that's the fastest way to understand what to call from your
@@ -174,5 +226,12 @@ interface Stay {
 - **CORS errors in the browser console when calling from Angular** — make sure your Angular
   dev server origin (usually `http://localhost:4200`) is allowed; `CORS_ORIGIN=*` in `.env`
   already allows every origin, which is fine for local homework use.
+- **`401 Unauthorized` on every protected call** — either you're not sending the
+  `Authorization: Bearer <token>` header at all, or the access token is older than 60 seconds and
+  you need to refresh it.
+- **`403 Forbidden` on `DELETE /api/stays/:id`** — you're logged in, but as a `USER`. Log in as
+  `admin@nestly.dev` instead.
+- **`401` on `POST /api/auth/refresh`** — the refresh token was already used (refresh rotates
+  it), or you logged out. Log in again.
 - **Port 3000 already in use** — change `PORT` in `.env`, then use that new port in your
   Angular service's base URL.

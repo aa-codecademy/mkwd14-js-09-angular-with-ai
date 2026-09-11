@@ -80,3 +80,21 @@ export const staysSeed = [
       'A spacious penthouse with a private rooftop terrace overlooking the bay — perfect for sunset dinners.',
   },
 ];
+
+// The two demo accounts for Homework 6. Both use the password `password123`.
+export const usersSeed = [
+  {
+    email: 'admin@nestly.dev',
+    password: 'password123',
+    firstName: 'Amelia',
+    lastName: 'Admin',
+    role: 'ADMIN' as const,
+  },
+  {
+    email: 'user@nestly.dev',
+    password: 'password123',
+    firstName: 'Uma',
+    lastName: 'User',
+    role: 'USER' as const,
+  },
+];

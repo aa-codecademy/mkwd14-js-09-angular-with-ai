@@ -29,5 +29,7 @@ import { AuthStore } from '../../../store/auth/auth.store';
 export class NavbarComponent {
   cartService = inject(CartService);
   loadingService = inject(LoadingService);
+  // Public (no `private`) because the TEMPLATE reads it. A private field is invisible
+  // to the template and Angular's compiler will error on `store.isLoggedIn()`.
   store = inject(AuthStore);
 }

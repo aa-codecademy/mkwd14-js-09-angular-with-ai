@@ -13,6 +13,7 @@ Each homework builds on everything taught in class up to that point — check th
 | 3 | Nestly gets real HTTP calls — connecting to a backend | Class 4 (`HttpClient`, services, observables) — builds on Homework 1 + 2. Uses the [`nestly-server`](./nestly-server) backend included in this repo. | [hmw_3.md](./hmw_3.md) |
 | 4 | Nestly, now hosts can list a stay — a reactive form | Class 7 (Reactive Forms — `FormBuilder`, `FormGroup`, `FormArray`, custom & cross-field validators) — builds on Homework 1 + 2 + 3 | [hmw_4.md](./hmw_4.md) |
 | 5 | Nestly gets a Signal Store — moving list state into NgRx Signals | Class 10 (`@ngrx/signals` — `signalStore`, `withState`, `withComputed`, `withMethods`, `rxMethod`) — builds on Homework 1 + 2 + 3 | [hmw_5.md](./hmw_5.md) |
+| 6 | Nestly gets accounts — authentication & authorization | Class 12 (JWT access/refresh tokens, functional guards, HTTP interceptors, roles) — builds on Homework 1–5. Uses the auth routes of [`nestly-server`](./nestly-server). **Final homework.** | [hmw_6.md](./hmw_6.md) |
 
 ## How to submit
 

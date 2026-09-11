@@ -10,8 +10,18 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { StaysService } from './stays.service';
 import { CreateStayDto } from './dto/create-stay.dto';
 import { UpdateStayDto } from './dto/update-stay.dto';
@@ -45,14 +55,26 @@ export class StaysController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create a new stay' })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Create a new stay',
+    description: 'Protected — any logged-in user (USER or ADMIN) may create a stay.',
+  })
+  @ApiResponse({ status: 401, description: 'Access token missing or expired.' })
   @ApiResponse({ status: 201, description: 'The created stay.', type: Stay })
   create(@Body() dto: CreateStayDto) {
     return this.staysService.create(dto);
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Update an existing stay' })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update an existing stay',
+    description: 'Protected — any logged-in user (USER or ADMIN) may update a stay.',
+  })
+  @ApiResponse({ status: 401, description: 'Access token missing or expired.' })
   @ApiParam({ name: 'id', example: 1 })
   @ApiResponse({ status: 200, description: 'The updated stay.', type: Stay })
   @ApiResponse({ status: 404, description: 'No stay with that id.' })
@@ -62,7 +84,15 @@ export class StaysController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a stay' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Delete a stay',
+    description: 'Protected — ADMIN only. A logged-in USER gets 403 here.',
+  })
+  @ApiResponse({ status: 401, description: 'Access token missing or expired.' })
+  @ApiResponse({ status: 403, description: 'Logged in, but not an ADMIN.' })
   @ApiParam({ name: 'id', example: 1 })
   @ApiResponse({ status: 204, description: 'Stay deleted.' })
   @ApiResponse({ status: 404, description: 'No stay with that id.' })

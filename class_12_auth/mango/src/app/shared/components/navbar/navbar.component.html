@@ -39,14 +39,19 @@
           <mat-icon>shopping_cart</mat-icon>
         </button>
       </a>
+      <!-- isLoggedIn is a computed SIGNAL, so call it with (). It re-evaluates by itself -->
+      <!-- the moment a token is set or cleared, and this block swaps without any manual work. -->
       @if (store.isLoggedIn()) {
         <a routerLink="/orders" routerLinkActive="active-link" class="nav-white-link"
           ><mat-icon>receipt_long</mat-icon> My Orders</a
         >
         <a routerLink="/account" class="nav-white-link">
           <mat-icon>person</mat-icon>
+          <!-- ?. matters: currentUser() is User | null, and reading .email off null crashes the view. -->
           {{ store.currentUser()?.email }}
         </a>
+        <!-- Pass store.logout() with the parentheses here: this is a template statement that
+             runs ON CLICK, unlike @Output bindings where you pass a function reference. -->
         <button mat-icon-button class="nav-white-link" title="Sign out" (click)="store.logout()">
           <mat-icon>logout</mat-icon>
         </button>
