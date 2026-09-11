@@ -5,7 +5,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatAnchor, MatIconButton } from '@angular/material/button';
 import { MatTable, MatTableModule } from '@angular/material/table';
 import { MatSortModule } from '@angular/material/sort';
-import { DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
+import type { OrderItem } from '../../../core/models/order.model';
 
 @Component({
   imports: [
@@ -17,6 +18,7 @@ import { DatePipe } from '@angular/common';
     MatSortModule,
     MatIconButton,
     DatePipe,
+    CurrencyPipe,
   ],
   selector: 'app-orders',
   styleUrl: './orders.component.css',
@@ -29,9 +31,23 @@ export class OrdersComponent {
 
   // mat-table renders columns in THIS array's order, matching each entry to a
   // matColumnDef of the same name. Forget a name here and that column silently won't render.
-  displayedColumns = ['expand', 'id', 'createdAt', 'customer'];
+  displayedColumns = [
+    'expand',
+    'id',
+    'createdAt',
+    'customer',
+    'shipTo',
+    'items',
+    'total',
+    'status',
+    'actions',
+  ];
 
   // TODO (exercise): forward Material's sort event to store.setSortBy/setSortDir.
   // `any` is a placeholder - type it as Sort from @angular/material/sort when you fill it in.
   onSortChange(event: any) {}
+
+  itemCount(items: OrderItem[] = []): number {
+    return items.reduce((sum, item) => sum + item.quantity, 0);
+  }
 }

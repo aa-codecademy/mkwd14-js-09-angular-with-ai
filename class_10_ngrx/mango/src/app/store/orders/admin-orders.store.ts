@@ -33,6 +33,7 @@ type AdminOrdersState = {
   // A single "which row is busy" id instead of a boolean per row - lets the template disable
   // exactly one order's buttons while its status update is in flight.
   updatingId: number | null;
+  expandedId: number | null;
 };
 
 // Starting with `loading: true` avoids a flash of "no orders found" before the first
@@ -46,6 +47,7 @@ const initialState: AdminOrdersState = {
   total: 0,
   loading: true,
   updatingId: null,
+  expandedId: null,
 };
 
 export const AdminOrdersStore = signalStore(
@@ -118,6 +120,17 @@ export const AdminOrdersStore = signalStore(
       },
       setPageSize(pageSize: number) {
         patchState(store, { pageSize });
+      },
+      updateStatus(order: Order, status: OrderStatus) {
+        console.log(order.status, status);
+      },
+
+      setExpanded(id: number) {
+        if (store.expandedId() === id) {
+          patchState(store, { expandedId: null });
+        } else {
+          patchState(store, { expandedId: id });
+        }
       },
     };
   }),

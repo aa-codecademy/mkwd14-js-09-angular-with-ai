@@ -12,6 +12,7 @@ import { Product } from '../products/product.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
+import { assertTransitionAllowed } from './order-status';
 
 export const DEFAULT_ORDER_PAGE_SIZE = 10;
 
@@ -127,14 +128,25 @@ export class OrdersService {
   }
 
   /**
-   * Admin approve/decline. Cancelling puts the reserved stock back, but only on
-   * the first transition into CANCELLED so a repeated call can't inflate it.
+   * Move an order one step along its lifecycle. The flow is one-dimensional —
+   * PENDING to SHIPPED or CANCELLED, SHIPPED to DELIVERED — and there is no
+   * undo. A user may only act on their own order; an admin on any.
+   * Cancelling puts the reserved stock back.
    */
-  async updateStatus(id: number, status: OrderStatus): Promise<Order> {
+  async updateStatus(
+    id: number,
+    status: OrderStatus,
+    actor: Pick<JwtPayload, 'sub' | 'role'>,
+  ): Promise<Order> {
     const order = await this.ordersRepository.findOne({ where: { id } });
     if (!order) throw new NotFoundException(`Order ${id} not found`);
+    if (actor.role !== 'ADMIN' && order.userId !== actor.sub) {
+      throw new ForbiddenException('You do not have access to this order');
+    }
 
-    if (status === 'CANCELLED' && order.status !== 'CANCELLED') {
+    assertTransitionAllowed(order.status, status, actor.role);
+
+    if (status === 'CANCELLED') {
       const products = await this.productsRepository.findBy({
         id: In(order.items.map((item) => item.productId)),
       });

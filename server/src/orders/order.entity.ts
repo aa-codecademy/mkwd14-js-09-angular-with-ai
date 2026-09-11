@@ -12,8 +12,8 @@ import { OrderItem } from './order-item.entity';
 
 export const ORDER_STATUSES = [
   'PENDING',
-  'PAID',
   'SHIPPED',
+  'DELIVERED',
   'CANCELLED',
 ] as const;
 

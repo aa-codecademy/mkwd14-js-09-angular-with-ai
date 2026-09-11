@@ -50,15 +50,19 @@ export class OrdersController {
   }
 
   @Patch(':id/status')
-  @Roles('ADMIN')
   @ApiOperation({
-    summary: 'Approve, decline or advance an order (admin only)',
+    summary:
+      'Advance an order along its lifecycle. Admins may ship or cancel a ' +
+      'pending order and mark a shipped one delivered; a user may cancel ' +
+      'their own pending order or confirm delivery of a shipped one.',
   })
   updateStatus(
+    @Req() req: Request,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOrderStatusDto,
   ) {
-    return this.ordersService.updateStatus(id, dto.status);
+    const user = req.user as JwtPayload;
+    return this.ordersService.updateStatus(id, dto.status, user);
   }
 
   @Get(':id')
