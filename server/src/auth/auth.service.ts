@@ -36,7 +36,7 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<AuthResponse> {
+  async register(dto: RegisterDto): Promise<{ user: User }> {
     const existing = await this.usersRepository.findOne({
       where: { email: dto.email },
     });
@@ -51,7 +51,9 @@ export class AuthService {
       role: 'USER',
     });
     await this.usersRepository.save(user);
-    return this.buildAuthResponse(user);
+    return {
+      user,
+    };
   }
 
   async login(dto: LoginDto): Promise<AuthResponse> {

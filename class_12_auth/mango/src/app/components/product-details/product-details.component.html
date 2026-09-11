@@ -1,0 +1,43 @@
+<!-- <pre>
+  {{ product() | json }}
+</pre> -->
+
+<div class="container product-detail-page">
+  @if (product()) {
+    <a mat-button routerLink="/products" class="back-link"
+      ><mat-icon>arrow_back</mat-icon> Back to Products</a
+    >
+    <div class="product-detail-grid">
+      <img [src]="product()!.image" alt="" [alt]="product()!.name" class="product-detail-image" />
+      <div>
+        <h1 class="product-title">{{ product()!.name }}</h1>
+        <div class="product-price">
+          @if (product()!.discountPercent > 0) {
+            {{ product()!.price * (1 - product()!.discountPercent / 100) | currency: 'EUR' }}
+            <span class="original-price-strike">{{ product()!.price | currency: 'EUR' }}</span>
+          } @else {
+            {{ product()!.price | currency: 'EUR' }}
+          }
+        </div>
+        <p class="product-description">{{ product()!.description }}</p>
+        @if (product()!.stock === 0) {
+          <span class="out-of-stock-badge stock-badge-spacing">Out of Stock</span>
+        } @else {
+          <span class="in-stock-badge stock-badge-spacing">In Stock ({{ product()!.stock }})</span>
+        }
+        <br />
+        <button
+          mat-flat-button
+          color="primary"
+          [disabled]="product()!.stock === 0"
+          (click)="addToCart()"
+        >
+          <mat-icon>shopping_cart</mat-icon>
+          Add to Cart
+        </button>
+      </div>
+    </div>
+  } @else {
+    <app-product-not-found [productId]="productId()" />
+  }
+</div>

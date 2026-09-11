@@ -1,0 +1,62 @@
+<mat-toolbar class="navbar-toolbar">
+  <div class="navbar-row">
+    <!-- Brand: icon + wordmark act as one link back to home. -->
+    <a routerLink="/" class="navbar-brand">
+      <mat-icon class="navbar-brand-icon">spa</mat-icon>
+      <span class="navbar-brand-text">Mango</span>
+    </a>
+
+    <nav class="navbar-nav">
+      <a
+        routerLink="/"
+        mat-button
+        class="navbar-link"
+        routerLinkActive="active-link"
+        [routerLinkActiveOptions]="{ exact: true }"
+        >Home</a
+      >
+      <a mat-button routerLink="/products" class="navbar-link" routerLinkActive="active-link">
+        Products
+      </a>
+      <a mat-button routerLink="/admin" class="navbar-link" routerLinkActive="active-link">Admin</a>
+    </nav>
+
+    <!-- An empty span used purely for flexbox spacing (pushes the actions to the right) -->
+    <!-- a common Material toolbar trick, styled via the global "spacer" class in styles.css. -->
+    <span class="spacer"></span>
+
+    <div class="navbar-actions">
+      <!-- matBadge overlays a small counter badge on the button - handy for cart item counts, notifications, etc. -->
+      <a routerLink="/cart" class="navbar-icon-link" aria-label="Cart">
+        <button
+          mat-icon-button
+          [matBadge]="cartService.itemsCount()"
+          [matBadgeHidden]="cartService.itemsCount() === 0"
+          matBadgeColor="warn"
+          matBadgeSize="small"
+          class="navbar-link"
+        >
+          <mat-icon>shopping_cart</mat-icon>
+        </button>
+      </a>
+      @if (store.isLoggedIn()) {
+        <a routerLink="/orders" routerLinkActive="active-link" class="nav-white-link"
+          ><mat-icon>receipt_long</mat-icon> My Orders</a
+        >
+        <a routerLink="/account" class="nav-white-link">
+          <mat-icon>person</mat-icon>
+          {{ store.currentUser()?.email }}
+        </a>
+        <button mat-icon-button class="nav-white-link" title="Sign out" (click)="store.logout()">
+          <mat-icon>logout</mat-icon>
+        </button>
+      } @else {
+        <a mat-stroked-button routerLink="/login" class="navbar-login">Login</a>
+      }
+    </div>
+  </div>
+
+  @if (loadingService.isLoading()) {
+    <mat-progress-bar mode="indeterminate" class="navbar-progress" />
+  }
+</mat-toolbar>
