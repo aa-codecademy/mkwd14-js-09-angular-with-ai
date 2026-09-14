@@ -7,6 +7,8 @@ import { environment } from '../environments/environment';
 import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { provideDevtoolsConfig } from '@ngrx-toolkit/core';
+import { authInterceptor } from './shared/interceptors/auth.interceptor';
+import { refreshTokenInterceptor } from './shared/interceptors/refresh-token.interceptor';
 
 // ApplicationConfig is the standalone-app replacement for the old root NgModule -
 // it just registers app-wide providers (dependency injection tokens) via bootstrapApplication.
@@ -17,7 +19,10 @@ export const appConfig: ApplicationConfig = {
     // Registers the Router service app-wide and wires up our `routes` array - without this,
     // <router-outlet> and routerLink would have nothing to talk to.
     provideRouter(routes),
-    provideHttpClient(withXhr(), withInterceptors([loadingInterceptor])),
+    provideHttpClient(
+      withXhr(),
+      withInterceptors([loadingInterceptor, authInterceptor, refreshTokenInterceptor]),
+    ),
     { provide: API_URL, useValue: environment.apiUrl },
     // Signal stores connect to the Redux DevTools browser extension via the
     // @ngrx-toolkit/core Redux DevTools bridge. The extension sees window.__REDUX_DEVTOOLS_EXTENSION__.

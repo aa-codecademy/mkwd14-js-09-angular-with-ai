@@ -62,6 +62,11 @@ export const AuthStore = signalStore(
       // change. The store just passes the call straight through.
       return authService.register(body);
     },
+    refresh() {
+      return authService
+        .refresh(store.refreshToken()!)
+        .pipe(tap((res) => store.setTokens(res.accessToken, res.refreshToken)));
+    },
     logout() {
       // Synchronous on purpose: logging out is a local action. Clear tokens, clear the
       // user, then leave the page - in that order, so nothing renders with stale state.

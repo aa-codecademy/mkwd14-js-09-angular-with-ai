@@ -1,0 +1,35 @@
+.not-allowed-page {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 16px;
+  text-align: center;
+}
+
+.not-allowed-icon {
+  font-size: 96px;
+  width: 96px;
+  height: 96px;
+  color: #b00020;
+}
+
+.not-allowed-title {
+  font-size: 2.75rem;
+  font-weight: 300;
+  margin: 16px 0 8px;
+  color: #333;
+}
+
+.not-allowed-subtitle {
+  font-size: 1.5rem;
+  font-weight: 300;
+  margin: 0 0 16px;
+  color: #555;
+}
+
+.not-allowed-text {
+  color: #666;
+  margin-bottom: 32px;
+}

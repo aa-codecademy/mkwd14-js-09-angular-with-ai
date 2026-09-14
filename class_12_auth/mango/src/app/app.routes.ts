@@ -47,6 +47,13 @@ export const routes: Routes = [
       import('./components/orders/orders.component').then((m) => m.OrdersComponent),
   },
   {
+    path: 'not-allowed',
+    loadComponent: () =>
+      import('./shared/components/not-allowed/not-allowed.component').then(
+        (m) => m.NotAllowedComponent,
+      ),
+  },
+  {
     path: 'admin',
     canActivate: [authGuard, adminGuard],
     loadChildren: () => import('./components/admin/admin.routes').then((m) => m.adminRoutes),
