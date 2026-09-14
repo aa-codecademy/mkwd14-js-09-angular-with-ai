@@ -13,16 +13,9 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { assertTransitionAllowed } from './order-status';
+import { PaginatedOrdersDto } from './dto/order-response.dto';
 
 export const DEFAULT_ORDER_PAGE_SIZE = 10;
-
-export interface PaginatedOrders {
-  data: Order[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
 
 @Injectable()
 export class OrdersService {
@@ -93,7 +86,7 @@ export class OrdersService {
   }
 
   /** Every order in the system — admin only, paginated and sortable. */
-  async findAllForAdmin(query: QueryOrdersDto): Promise<PaginatedOrders> {
+  async findAllForAdmin(query: QueryOrdersDto): Promise<PaginatedOrdersDto> {
     const qb = this.ordersRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.user', 'user')

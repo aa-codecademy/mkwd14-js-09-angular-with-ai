@@ -32,4 +32,9 @@ export class NavbarComponent {
   // Public (no `private`) because the TEMPLATE reads it. A private field is invisible
   // to the template and Angular's compiler will error on `store.isLoggedIn()`.
   store = inject(AuthStore);
+
+  get accountUsername(): string {
+    const email = this.store.currentUser()?.email ?? '';
+    return email.split('@')[0] ?? '';
+  }
 }

@@ -19,7 +19,9 @@
         Products
       </a>
       @if (store.isAdmin()) {
-        <a mat-button routerLink="/admin" class="navbar-link" routerLinkActive="active-link">Admin</a>
+        <a mat-button routerLink="/admin" class="navbar-link" routerLinkActive="active-link"
+          >Admin</a
+        >
       }
     </nav>
 
@@ -28,33 +30,46 @@
     <span class="spacer"></span>
 
     <div class="navbar-actions">
-      <!-- matBadge overlays a small counter badge on the button - handy for cart item counts, notifications, etc. -->
-      <a routerLink="/cart" class="navbar-icon-link" aria-label="Cart">
-        <button
-          mat-icon-button
-          [matBadge]="cartService.itemsCount()"
-          [matBadgeHidden]="cartService.itemsCount() === 0"
-          matBadgeColor="warn"
-          matBadgeSize="small"
-          class="navbar-link"
-        >
-          <mat-icon>shopping_cart</mat-icon>
-        </button>
+      <!-- matBadge overlays a small counter badge on the cart link itself - the badge value
+           should be attached to the same interactive element that owns the icon. -->
+      <a
+        routerLink="/cart"
+        class="navbar-icon-link navbar-link"
+        aria-label="Cart"
+        mat-icon-button
+        [matBadge]="cartService.itemsCount()"
+        [matBadgeHidden]="cartService.itemsCount() === 0"
+        matBadgeColor="warn"
+      >
+        <mat-icon>shopping_cart</mat-icon>
       </a>
       <!-- isLoggedIn is a computed SIGNAL, so call it with (). It re-evaluates by itself -->
       <!-- the moment a token is set or cleared, and this block swaps without any manual work. -->
       @if (store.isLoggedIn()) {
-        <a routerLink="/orders" routerLinkActive="active-link" class="nav-white-link"
-          ><mat-icon>receipt_long</mat-icon> My Orders</a
+        <a
+          routerLink="/orders"
+          routerLinkActive="active-link"
+          class="navbar-link nav-link-with-icon"
         >
-        <a routerLink="/account" class="nav-white-link">
+          <mat-icon>receipt_long</mat-icon>
+          <span>My Orders</span>
+        </a>
+        <a
+          routerLink="/account"
+          routerLinkActive="active-link"
+          class="navbar-link nav-link-with-icon"
+        >
           <mat-icon>person</mat-icon>
-          <!-- ?. matters: currentUser() is User | null, and reading .email off null crashes the view. -->
-          {{ store.currentUser()?.email }}
+          <span>{{ accountUsername }}</span>
         </a>
         <!-- Pass store.logout() with the parentheses here: this is a template statement that
              runs ON CLICK, unlike @Output bindings where you pass a function reference. -->
-        <button mat-icon-button class="nav-white-link" title="Sign out" (click)="store.logout()">
+        <button
+          mat-icon-button
+          class="navbar-link navbar-icon-button"
+          title="Sign out"
+          (click)="store.logout()"
+        >
           <mat-icon>logout</mat-icon>
         </button>
       } @else {

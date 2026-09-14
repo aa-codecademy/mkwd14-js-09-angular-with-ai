@@ -12,21 +12,12 @@ import { User } from './entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
-
-export interface PublicUser {
-  id: number;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: 'USER' | 'ADMIN';
-  createdAt: string;
-}
-
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: PublicUser;
-}
+import {
+  AuthResponseDto,
+  PublicUserDto,
+  RegisterResponseDto,
+  TokenPairDto,
+} from './dto/auth-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -36,7 +27,7 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<{ user: User }> {
+  async register(dto: RegisterDto): Promise<RegisterResponseDto> {
     const existing = await this.usersRepository.findOne({
       where: { email: dto.email },
     });
@@ -56,7 +47,7 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto): Promise<AuthResponse> {
+  async login(dto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.usersRepository.findOne({
       where: { email: dto.email },
       select: {
@@ -77,7 +68,7 @@ export class AuthService {
     return this.buildAuthResponse(user);
   }
 
-  async refresh(refreshToken: string): Promise<{ accessToken: string }> {
+  async refresh(refreshToken: string): Promise<TokenPairDto> {
     let payload: JwtPayload;
     try {
       payload = this.jwtService.verify<JwtPayload>(refreshToken, {
@@ -92,17 +83,19 @@ export class AuthService {
     });
     if (!user) throw new UnauthorizedException('Invalid refresh token');
 
-    const accessToken = this.signAccessToken(user);
-    return { accessToken };
+    return {
+      accessToken: this.signAccessToken(user),
+      refreshToken: this.signRefreshToken(user),
+    };
   }
 
-  async me(userId: number): Promise<PublicUser> {
+  async me(userId: number): Promise<PublicUserDto> {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('User no longer exists');
     return this.toPublicUser(user);
   }
 
-  private buildAuthResponse(user: User): AuthResponse {
+  private buildAuthResponse(user: User): AuthResponseDto {
     return {
       accessToken: this.signAccessToken(user),
       refreshToken: this.signRefreshToken(user),
@@ -110,7 +103,7 @@ export class AuthService {
     };
   }
 
-  private toPublicUser(user: User): PublicUser {
+  private toPublicUser(user: User): PublicUserDto {
     return {
       id: user.id,
       email: user.email,

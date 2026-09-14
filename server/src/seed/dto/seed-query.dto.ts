@@ -5,6 +5,8 @@ import { DEFAULT_PRODUCT_COUNT } from '../seed-data';
 
 export class SeedQueryDto {
   @ApiPropertyOptional({
+    type: Number,
+    example: DEFAULT_PRODUCT_COUNT,
     description: 'How many products the table should end up with.',
     default: DEFAULT_PRODUCT_COUNT,
     minimum: 1,

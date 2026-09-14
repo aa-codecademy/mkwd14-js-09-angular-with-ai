@@ -6,13 +6,28 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { DevAuthService } from './dev-auth.service';
 import { DevOnlyGuard } from './dev-only.guard';
 import { DEV_USER_PASSWORD } from './dev-auth.constants';
+import {
+  DevSeedUsersResponseDto,
+  DevStatusResponseDto,
+} from './dto/dev-auth-response.dto';
+import { ErrorResponseDto } from '../common/dto/error-response.dto';
 
 /** Every route here 404s unless AUTH_BYPASS is on — see DevOnlyGuard. */
 @ApiTags('dev')
+@ApiNotFoundResponse({
+  description:
+    'AUTH_BYPASS is off — these routes do not exist outside local development',
+  type: ErrorResponseDto,
+})
 @UseGuards(DevOnlyGuard)
 @Controller('dev')
 export class DevAuthController {
@@ -23,6 +38,12 @@ export class DevAuthController {
   @ApiOperation({
     summary:
       'Create the fake dev accounts (one per role) and return their credentials',
+    description:
+      'Idempotent — accounts that already exist are reused, with their role re-synced to the spec.',
+  })
+  @ApiOkResponse({
+    description: 'The dev accounts and their shared password',
+    type: DevSeedUsersResponseDto,
   })
   async seedUsers() {
     const users = await this.devAuth.seedDevUsers();
@@ -44,6 +65,11 @@ export class DevAuthController {
 
   @Get('status')
   @ApiOperation({ summary: 'Report the bypass state and the identity in use' })
+  @ApiOkResponse({
+    description:
+      'The bypass state and the identity unauthenticated requests run as',
+    type: DevStatusResponseDto,
+  })
   async status() {
     return {
       authBypass: this.devAuth.enabled,

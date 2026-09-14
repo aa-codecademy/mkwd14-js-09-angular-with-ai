@@ -13,6 +13,12 @@ import {
   seedCategories,
   seedUsers,
 } from './seed-data';
+import {
+  SeedAllResultDto,
+  SeedProductsResultDto,
+  SeedStatusDto,
+  SeedTableResultDto,
+} from './dto/seed-response.dto';
 
 const INSERT_CHUNK_SIZE = 200;
 
@@ -30,14 +36,14 @@ export class SeedService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async seedAll(count = DEFAULT_PRODUCT_COUNT) {
+  async seedAll(count = DEFAULT_PRODUCT_COUNT): Promise<SeedAllResultDto> {
     const categories = await this.seedCategories();
     const products = await this.seedProducts(count);
     const users = await this.seedUsers();
     return { categories, products, users };
   }
 
-  async seedCategories() {
+  async seedCategories(): Promise<SeedTableResultDto> {
     const created: string[] = [];
     for (const c of seedCategories) {
       const existing = await this.categoryRepo.findOne({
@@ -54,7 +60,9 @@ export class SeedService {
     };
   }
 
-  async seedProducts(count = DEFAULT_PRODUCT_COUNT) {
+  async seedProducts(
+    count = DEFAULT_PRODUCT_COUNT,
+  ): Promise<SeedProductsResultDto> {
     const categoriesBySlug = await this.ensureCategoryMap();
 
     const existingSlugs = new Set(
@@ -81,7 +89,7 @@ export class SeedService {
     };
   }
 
-  async seedUsers() {
+  async seedUsers(): Promise<SeedTableResultDto> {
     const created: string[] = [];
     for (const u of seedUsers) {
       const existing = await this.userRepo.findOne({
@@ -107,18 +115,20 @@ export class SeedService {
     };
   }
 
-  async resetProducts(count = DEFAULT_PRODUCT_COUNT) {
+  async resetProducts(
+    count = DEFAULT_PRODUCT_COUNT,
+  ): Promise<SeedProductsResultDto> {
     await this.wipeProducts();
     return this.seedProducts(count);
   }
 
-  async resetAll(count = DEFAULT_PRODUCT_COUNT) {
+  async resetAll(count = DEFAULT_PRODUCT_COUNT): Promise<SeedAllResultDto> {
     await this.wipeProducts();
     await this.categoryRepo.createQueryBuilder().delete().execute();
     return this.seedAll(count);
   }
 
-  async status() {
+  async status(): Promise<SeedStatusDto> {
     return {
       categories: await this.categoryRepo.count(),
       products: await this.productRepo.count(),

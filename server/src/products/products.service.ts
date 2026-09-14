@@ -9,17 +9,13 @@ import { Product } from './product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { QueryProductsDto } from './dto/query-products.dto';
+import {
+  PaginatedProductsDto,
+  SkuAvailabilityDto,
+} from './dto/product-response.dto';
 
 export const DEFAULT_PAGE_SIZE = 12;
 const POSTGRES_UNIQUE_VIOLATION = '23505';
-
-export interface PaginatedProducts {
-  data: Product[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
 
 function slugify(name: string): string {
   return name
@@ -36,7 +32,7 @@ export class ProductsService {
     private readonly productsRepository: Repository<Product>,
   ) {}
 
-  async findAll(query: QueryProductsDto): Promise<PaginatedProducts> {
+  async findAll(query: QueryProductsDto): Promise<PaginatedProductsDto> {
     const qb = this.productsRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category');
@@ -79,7 +75,7 @@ export class ProductsService {
   async isSkuAvailable(
     sku: string,
     excludeId?: number,
-  ): Promise<{ sku: string; available: boolean }> {
+  ): Promise<SkuAvailabilityDto> {
     const existing = await this.productsRepository.findOne({ where: { sku } });
     return { sku, available: !existing || existing.id === excludeId };
   }

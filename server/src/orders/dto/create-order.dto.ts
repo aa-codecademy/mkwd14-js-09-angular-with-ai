@@ -13,11 +13,15 @@ import {
 } from 'class-validator';
 
 export class CreateOrderItemDto {
-  @ApiProperty({ example: 1 })
+  @ApiProperty({ example: 1, description: 'Id of the product being ordered' })
   @IsInt()
   productId: number;
 
-  @ApiProperty({ example: 2 })
+  @ApiProperty({
+    example: 2,
+    minimum: 1,
+    description: 'Units ordered; must not exceed the product stock',
+  })
   @IsInt()
   @Min(1)
   quantity: number;
@@ -61,14 +65,21 @@ export class ShippingAddressDto {
 }
 
 export class CreateOrderDto {
-  @ApiProperty({ type: [CreateOrderItemDto] })
+  @ApiProperty({
+    type: [CreateOrderItemDto],
+    description: 'At least one product line',
+    example: [{ productId: 1, quantity: 2 }],
+  })
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)
   items: CreateOrderItemDto[];
 
-  @ApiProperty({ type: ShippingAddressDto })
+  @ApiProperty({
+    type: ShippingAddressDto,
+    description: 'Where the order is delivered; copied onto the order',
+  })
   @IsObject()
   @ValidateNested()
   @Type(() => ShippingAddressDto)
