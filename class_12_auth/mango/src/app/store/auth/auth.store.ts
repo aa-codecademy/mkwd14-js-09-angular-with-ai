@@ -27,16 +27,21 @@ export const AuthStore = signalStore(
   withTokenStorage(),
   withState<AuthState>(initialState),
 
-  withComputed(({ accessToken, user }) => ({
-    // "Logged in" is DERIVED from the token, never stored as its own boolean. One source
-    // of truth - you can't end up with isLoggedIn === true and no token.
-    isLoggedIn: computed<boolean>(() => !!accessToken()),
-
+  withComputed(({ accessToken, user }) => {
     // Fallback chain: use the user object from the login response if we have it, otherwise
     // rebuild a partial user from the JWT. That second path is what a page REFRESH hits -
     // the token survived in localStorage but the user object did not.
-    currentUser: computed<User | null>(() => user() ?? decodeToken(accessToken())),
-  })),
+    const currentUser = computed<User | null>(() => user() ?? decodeToken(accessToken()));
+
+    return {
+      // "Logged in" is DERIVED from the token, never stored as its own boolean. One source
+      // of truth - you can't end up with isLoggedIn === true and no token.
+      isLoggedIn: computed<boolean>(() => !!accessToken()),
+      currentUser,
+      role: computed(() => currentUser()?.role ?? null),
+      isAdmin: computed(() => currentUser()?.role === 'ADMIN'),
+    };
+  }),
 
   // Services are injected as default parameters - withMethods' factory is an injection
   // context; calling inject() inside the methods themselves would throw.

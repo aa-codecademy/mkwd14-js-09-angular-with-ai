@@ -1,4 +1,6 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './shared/guards/auth.guard';
+import { adminGuard } from './shared/guards/admin.guard';
 
 // Routes array maps URL paths to the standalone component that should render in <router-outlet>.
 export const routes: Routes = [
@@ -28,16 +30,25 @@ export const routes: Routes = [
   },
   {
     path: 'checkout',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./components/checkout/checkout.component').then((m) => m.CheckoutComponent),
   },
   {
+    path: 'account',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/account/account.component').then((m) => m.AccountComponent),
+  },
+  {
     path: 'orders',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./components/orders/orders.component').then((m) => m.OrdersComponent),
   },
   {
     path: 'admin',
+    canActivate: [authGuard, adminGuard],
     loadChildren: () => import('./components/admin/admin.routes').then((m) => m.adminRoutes),
   },
   {
