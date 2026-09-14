@@ -29,6 +29,8 @@ export const routes: Routes = [
     loadComponent: () => import('./components/cart/cart.component').then((m) => m.CartComponent),
   },
   {
+    // canActivate takes an ARRAY of guards. They all have to pass for the route to activate,
+    // and the router runs them in order - so put the cheapest / most general check first.
     path: 'checkout',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -55,6 +57,10 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
+    // Two guards, deliberately in this order: authGuard sends anonymous visitors to /login,
+    // and only then does adminGuard decide whether a logged-in user is allowed in.
+    // Guards on a lazy parent route run BEFORE the child chunk is downloaded - a non-admin
+    // never even fetches the admin JavaScript.
     canActivate: [authGuard, adminGuard],
     loadChildren: () => import('./components/admin/admin.routes').then((m) => m.adminRoutes),
   },

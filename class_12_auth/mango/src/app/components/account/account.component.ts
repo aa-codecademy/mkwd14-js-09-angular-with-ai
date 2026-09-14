@@ -12,5 +12,8 @@ import { AuthStore } from '../../store/auth/auth.store';
   templateUrl: './account.component.html',
 })
 export class AccountComponent {
-  auth = inject(AuthStore)
+  // Public on purpose - the template reads it directly. There is no local copy of the user
+  // here: the component renders straight from the store's signals, so logging out updates
+  // this page with no extra wiring.
+  auth = inject(AuthStore);
 }
