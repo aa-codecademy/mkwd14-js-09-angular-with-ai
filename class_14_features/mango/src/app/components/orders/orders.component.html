@@ -1,2 +1,26 @@
-<!-- Default CLI placeholder markup - replace it with the user's order history list. -->
-<p>orders works!</p>
+<div class="container orders-page">
+  <h1 class="page-title">My Orders</h1>
+
+  @for (order of store.orders(); track order.id) {
+    <mat-card class="order-card">
+      <div class="order-header">
+        <div>
+          <h2 class="order-number">Order: #{{ order.id }}</h2>
+          <span class="order-date">{{ order.createdAt | date: 'medium' }}</span>
+        </div>
+        <div class="order-summary">
+          <span class="status-badge" [style.backgroundColor]="statusColor(order.status)">{{
+            order.status
+          }}</span>
+          <span class="order-total">{{ order.total | currency: 'EUR' }}</span>
+        </div>
+      </div>
+
+      <div class="order-items">
+        @for (item of order.items; track item.id) {
+          <span>{{ item.price | currency: 'EUR' }}</span>
+        }
+      </div>
+    </mat-card>
+  }
+</div>

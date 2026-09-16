@@ -13,6 +13,10 @@ export class OrderService {
   // service ignorant of where the value comes from - easy to swap in tests.
   private apiUrl = inject(API_URL);
 
+  getMyOrders() {
+    return this.http.get<Order[]>(`${this.apiUrl}/orders`);
+  }
+
   // Note the two different types: CreateOrder is what we SEND, Order is what the API RETURNS.
   // Returning the Observable (not subscribing here) lets the component decide when to fire it.
   create(body: CreateOrder): Observable<Order> {
