@@ -1,0 +1,46 @@
+<div class="container product-list-page">
+  <div class="page-header">
+    <h1>All Products</h1>
+  </div>
+
+  <app-product-filters
+    [search]="store.searchInput()"
+    [sortBy]="store.sortBy()"
+    [sortDir]="store.sortDir()"
+    [categories]="store.categories()"
+    [categoryId]="store.categoryId()"
+    categoryStyle="chips"
+    (searchChange)="store.setSearch($event)"
+    (sortByChange)="store.setSortField($event)"
+    (sortDirChange)="store.setSortDir($event)"
+    (categoryChange)="store.setCategory($event)"
+  />
+
+  <div class="products-grid">
+    @for (product of store.products(); track product.id) {
+      <app-product-card [product]="product" />
+      <!-- @empty is the built-in "no results" branch - it renders when the list is empty, so
+           you don't need a separate @if with a .length check. -->
+    } @empty {
+      <div class="empty-state empty-state-full-width">
+        <p>No products founds.</p>
+        <!-- Only offer "clear filters" if filters are actually the reason it's empty. -->
+        @if (store.hasActiveFilters()) {
+          <button mat-stroked-button (click)="store.clearFilters()">Clear filters</button>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- The pagination component knows nothing about the store: it takes plain numbers in and
+       emits plain numbers out. That's the presentational ("dumb") component pattern - it stays
+       reusable because the parent, not the child, decides where the data comes from. -->
+  <app-pagination
+    [page]="store.page()"
+    [pageSize]="store.pageSize()"
+    [total]="store.total()"
+    [pageSizeOptions]="store.pageSizeOptions()"
+    (pageChange)="store.setPage($event)"
+    (pageSizeChange)="store.setPageSize($event)"
+  />
+</div>

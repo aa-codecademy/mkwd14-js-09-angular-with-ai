@@ -1,0 +1,23 @@
+.filter-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.search-field {
+  flex: 1 1 320px;
+  max-width: 480px;
+}
+
+.filter-field {
+  flex: 0 1 200px;
+}
+
+.clear-button {
+  margin-top: 8px;
+}
+
+.category-chips {
+  margin-bottom: 24px;
+}

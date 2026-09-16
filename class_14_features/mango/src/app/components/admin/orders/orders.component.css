@@ -1,0 +1,132 @@
+.orders-admin-container {
+  padding: 24px 16px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.orders-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.page-title {
+  font-size: 1.8rem;
+  font-weight: 300;
+}
+
+.page-subtitle {
+  color: #999;
+  margin-top: 4px;
+}
+
+.status-filter {
+  width: 220px;
+}
+
+.loading-text {
+  color: #999;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.full-width-table {
+  width: 100%;
+  min-width: 1000px;
+}
+
+.cell-strong {
+  display: block;
+  font-weight: 500;
+}
+
+.cell-muted {
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
+
+.actions-cell button {
+  margin-right: 8px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.badge-pending {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.badge-shipped {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.badge-cancelled {
+  background: #fdecea;
+  color: #c62828;
+}
+
+.badge-delivered {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* The expandable detail row has no height until its order is expanded */
+.detail-row {
+  height: auto;
+}
+
+.detail-row td {
+  padding: 0;
+  border-bottom-width: 0;
+}
+
+.detail-panel {
+  display: flex;
+  gap: 48px;
+  padding: 16px 24px;
+  background: #fafafa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.detail-address {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #555;
+}
+
+.detail-items {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+
+.detail-qty {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.cancel-red-button {
+  background: #d32f2f;
+  color: #fff;
+}
+
+.cancel-red-button:hover {
+  background: #b71c1c;
+  border-color: #b71c1c;
+}

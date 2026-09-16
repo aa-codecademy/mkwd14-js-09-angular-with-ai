@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 import {
   AuthResponseDto,
@@ -93,6 +94,40 @@ export class AuthService {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('User no longer exists');
     return this.toPublicUser(user);
+  }
+
+  /**
+   * A self-service password reset: the user proves they own the account with
+   * their current password, and gets a fresh pair of tokens so the session
+   * they are sitting in keeps working.
+   */
+  async changePassword(
+    userId: number,
+    dto: ChangePasswordDto,
+  ): Promise<AuthResponseDto> {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        passwordHash: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+    if (!user) throw new UnauthorizedException('User no longer exists');
+
+    const valid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!valid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    user.passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.usersRepository.save(user);
+
+    return this.buildAuthResponse(user);
   }
 
   private buildAuthResponse(user: User): AuthResponseDto {

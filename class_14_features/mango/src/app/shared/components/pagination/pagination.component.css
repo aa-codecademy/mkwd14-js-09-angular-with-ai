@@ -1,0 +1,6 @@
+/* mat-paginator ships its own surface colour; overriding it to transparent lets the
+   paginator sit on the page background instead of looking like a floating white card. */
+.pagination {
+  background: transparent;
+  padding: 8px 0;
+}

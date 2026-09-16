@@ -1,0 +1,58 @@
+.account-container {
+  padding: 24px 16px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.account-title {
+  font-size: 2rem;
+  font-weight: 300;
+  margin-bottom: 24px;
+}
+
+.profile-card {
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar {
+  background: #ff6b35;
+  color: white;
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+}
+
+.profile-email {
+  margin: 0;
+  font-weight: 400;
+}
+
+.role-badge {
+  font-size: 0.8rem;
+  background: #2ec4b6;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.role-badge.admin {
+  background: #ff6b35;
+}
+
+.account-actions {
+  display: flex;
+  gap: 12px;
+}

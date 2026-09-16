@@ -1,0 +1,94 @@
+<div class="container checkout-container">
+  <h1 class="checkout-title">Checkout</h1>
+
+  <!-- linear stepper - each step must be completed/valid before moving to the next -->
+  <mat-stepper [linear]="true" #stepper>
+    <!-- [stepControl]="addressForm" wires this step's "Next" button to the FormGroup's
+         validity - it's disabled until addressForm.valid is true. This is how reactive
+         forms integrate cleanly with UI components outside plain HTML forms. -->
+    <mat-step [stepControl]="addressForm" label="Shipping Address">
+      <form [formGroup]="addressForm">
+        <div class="name-fields-grid input-margin-bottom">
+          <!-- mat-form-field + matInput is Angular Material's wrapper around a native input -
+               formControlName still binds it to the FormGroup exactly like a plain input. -->
+          <!-- Note there's no @if around <mat-error> here: mat-form-field shows it
+               only when the control is invalid AND touched, so Material does the
+               job the @if blocks do in the login/register templates. The trade-off
+               is you can't tell WHICH validator failed - use @if + errors?.['...']
+               when a field has several rules and needs different messages. -->
+          <mat-form-field appearance="outline">
+            <mat-label>First name</mat-label>
+            <input type="text" matInput formControlName="firstName" />
+            <mat-error>First name is required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Last name</mat-label>
+            <input type="text" matInput formControlName="lastName" />
+            <mat-error>Last name is required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Street address</mat-label>
+          <input type="text" matInput formControlName="street" />
+          <mat-error>Street address is required</mat-error>
+        </mat-form-field>
+
+        <div class="address-fields-grid input-margin-bottom">
+          <mat-form-field appearance="outline">
+            <mat-label>City</mat-label>
+            <input type="text" matInput formControlName="city" />
+            <mat-error>City is required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Postal code</mat-label>
+            <input type="text" matInput formControlName="postalCode" />
+            <mat-error>Code is required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Country</mat-label>
+            <input type="text" matInput formControlName="country" />
+            <mat-error>Country is required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width-no-margin-field">
+          <mat-label>Phone</mat-label>
+          <mat-icon matPrefix>phone</mat-icon>
+          <input type="tel" matInput formControlName="phone" />
+        </mat-form-field>
+
+        <div class="step-action-row">
+          <!-- matStepperNext advances the stepper. Combined with [linear]="true" and
+               [stepControl] above, it stays disabled until addressForm is valid -
+               no click handler and no manual index tracking needed. -->
+          <button mat-flat-button color="primary" matStepperNext>Continue to Payment</button>
+        </div>
+      </form>
+    </mat-step>
+    <mat-step label="Confirm Order">
+      <div class="order-summary-wrapper">
+        <h3 class="order-summary-title">Order Summary</h3>
+        @for (item of cartService.items(); track item.product.id) {
+          <div class="order-line-item">
+            <span>{{ item.product.name }} * {{ item.quantity }}</span>
+            <span>{{
+              item.product.price * (1 - item.product.discountPercent / 100) * item.quantity
+                | currency: 'EUR'
+            }}</span>
+          </div>
+        }
+        <div class="order-actions-row">
+          <span>Total</span>
+          <span>{{ cartService.total() | currency: 'EUR' }}</span>
+        </div>
+
+        <div class="order-actions-row">
+          <button mat-stroked-button matStepperPrevious>Back</button>
+          <button mat-flat-button color="primary" (click)="placeOrder()">Place Order</button>
+        </div>
+      </div>
+    </mat-step>
+  </mat-stepper>
+</div>

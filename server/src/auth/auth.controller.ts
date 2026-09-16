@@ -23,6 +23,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import {
   AuthResponseDto,
   PublicUserDto,
@@ -90,6 +91,29 @@ export class AuthController {
   })
   refresh(@Body() dto: RefreshDto) {
     return this.authService.refresh(dto.refreshToken);
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Reset your own password',
+    description:
+      'The caller confirms their current password and picks a new one. A ' +
+      'fresh token pair comes back so the current session stays signed in.',
+  })
+  @ApiOkResponse({
+    description: 'The password was changed — new tokens and the user profile',
+    type: AuthResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Missing/invalid access token, or the current password is wrong',
+    type: ErrorResponseDto,
+  })
+  changePassword(@Req() req: Request, @Body() dto: ChangePasswordDto) {
+    const user = req.user as JwtPayload;
+    return this.authService.changePassword(user.sub, dto);
   }
 
   @Get('me')

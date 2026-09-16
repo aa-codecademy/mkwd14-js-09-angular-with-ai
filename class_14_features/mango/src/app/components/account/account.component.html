@@ -1,0 +1,33 @@
+<div class="container account-container">
+  <h1 class="account-title">My Account</h1>
+  <!-- `@if (expr; as user)` calls the signal ONCE and aliases the result. Without the alias
+       you'd write auth.currentUser()?.email everywhere and need ?. on every access, because
+       TypeScript can't prove a function call returns the same non-null value twice. -->
+  @if (auth.currentUser(); as user) {
+    <mat-card class="profile-card">
+      <div class="profile-row">
+        <div class="avatar">
+          {{ user.email.charAt(0).toUpperCase() }}
+        </div>
+        <div>
+          <h2 class="profile-email">{{ user.email }}</h2>
+          <!-- [class.admin] toggles a single CSS class from a boolean - cleaner than building
+             a class string by hand. Showing the role is cosmetic: the SERVER decides what an
+             admin may actually do. -->
+        <span class="role-badge" [class.admin]="auth.isAdmin()">{{ user.role }}</span>
+        </div>
+      </div>
+    </mat-card>
+
+    <div class="account-actions">
+      <a mat-flat-button color="primary" routerLink="/orders"
+        ><mat-icon>receipt_long</mat-icon> My Orders</a
+      >
+      <a mat-stroked-button routerLink="/products"> Continue Shopping</a>
+      <button mat-flat-button color="warn" (click)="auth.logout()">
+        <mat-icon>logout</mat-icon>
+        Sign Out
+      </button>
+    </div>
+  }
+</div>
