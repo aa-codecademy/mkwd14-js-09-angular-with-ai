@@ -52,6 +52,8 @@ export class OrdersComponent {
     'actions',
   ];
 
+  // Same confirmation flow as the customer page, but this one cancels SOMEONE ELSE'S order -
+  // all the more reason to make the admin click twice.
   async handleCancel(order: Order) {
     const confirmation = await this.confirmationService.confirm(
       `Are you sure you want to cancel order #${order.id}`,
@@ -59,6 +61,7 @@ export class OrdersComponent {
       'Cancel Order',
     );
 
+    // Say no and we simply never reach the store call - the order is untouched.
     if (!confirmation) {
       return;
     }

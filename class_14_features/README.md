@@ -1,522 +1,455 @@
-# Class 12 — Authentication with JWT
+# Class 14 — Building Your Own Features: Directives, Dynamic Components & Confirmation Flows
 
-Your app can list products, filter them and manage orders — but right now anyone can do all of it, and the app has no idea who is using it. In this class you add **authentication**: the user logs in, the server hands back a **JWT**, you store it, and the whole UI reacts to it. You'll build an `AuthStore` on top of the signal store you already know, split token persistence into its own reusable feature, decode the token to find out who the user is, and make the navbar change by itself the moment someone signs in or out. Then you'll wire the token into every outgoing request with an **interceptor**, keep anonymous visitors out of `/orders` and non-admins out of `/admin` with **guards**, and renew expired tokens behind the user's back with a **refresh interceptor**.
+Up to now you've used Angular's building blocks: components someone else declared in a template, dialogs from a library, `@if` to hide things. In this class you go one level down and **build the primitives yourself**. You'll write a structural directive that adds and removes DOM based on the logged-in user's role, create a component from scratch in TypeScript with no template tag anywhere, and wrap it in a service that hands you back a `Promise<boolean>` so "are you sure?" becomes a single `await`. Then you'll wire that flow into a real feature — cancelling an order — on both the customer page and the admin table.
 
 ## Table of Contents
 
 - [Core Concepts covered in this class](#core-concepts-covered-in-this-class)
-  - [Authentication vs. authorization](#authentication-vs-authorization)
-  - [What a JWT actually is](#what-a-jwt-actually-is)
-  - [Access tokens and refresh tokens](#access-tokens-and-refresh-tokens)
-  - [Persisting tokens with a store feature](#persisting-tokens-with-a-store-feature)
-  - [The AuthStore](#the-authstore)
-  - [Derived auth state](#derived-auth-state)
-  - [Decoding the token](#decoding-the-token)
-  - [Returning observables from store methods](#returning-observables-from-store-methods)
-  - [Reacting in the template](#reacting-in-the-template)
-  - [Typing the API contract](#typing-the-api-contract)
-  - [Sending the token: HTTP interceptors](#sending-the-token-http-interceptors)
-  - [Protecting routes: guards](#protecting-routes-guards)
-  - [Refreshing an expired token](#refreshing-an-expired-token)
+  - [Structural directives](#structural-directives)
+  - [TemplateRef and ViewContainerRef](#templateref-and-viewcontainerref)
+  - [Making a directive reactive with effect()](#making-a-directive-reactive-with-effect)
+  - [Dynamic components with createComponent()](#dynamic-components-with-createcomponent)
+  - [setInput() and why you can't just assign](#setinput-and-why-you-cant-just-assign)
+  - [Wrapping a dialog in a Promise](#wrapping-a-dialog-in-a-promise)
+  - [Dumb components: input() in, output() out](#dumb-components-input-in-output-out)
+  - [The confirm-then-act pattern](#the-confirm-then-act-pattern)
+  - [Cancelling an order end to end](#cancelling-an-order-end-to-end)
+  - [takeUntilDestroyed](#takeuntildestroyed)
 - [Theory](#theory)
-  - [Why the client can never be trusted](#why-the-client-can-never-be-trusted)
-  - [localStorage vs. httpOnly cookies](#localstorage-vs-httponly-cookies)
-  - [Surviving a page refresh](#surviving-a-page-refresh)
-  - [The full request lifecycle](#the-full-request-lifecycle)
-  - [What still has to be built](#what-still-has-to-be-built)
+  - [Why `*ngIf` has a star](#why-ngif-has-a-star)
+  - [The three ways to put a component on screen](#the-three-ways-to-put-a-component-on-screen)
+  - [Promise or Observable?](#promise-or-observable)
+  - [Refetch vs. patch after a write](#refetch-vs-patch-after-a-write)
+  - [Known rough edges in this code](#known-rough-edges-in-this-code)
 - [Useful Links](#useful-links)
 - [Mini Examples](#mini-examples)
 - [Practice Exercises](#practice-exercises)
 
 ## Core Concepts covered in this class
 
-### Authentication vs. authorization
+### Structural directives
 
-**Authentication** answers "who are you?" — the login form, the password check, the token.
-**Authorization** answers "what are you allowed to do?" — can this user open `/admin`, can they delete a product.
+A **structural** directive doesn't change how an element looks — it decides whether that element exists in the DOM at all. `*ngIf`, `*ngFor` and your own `*appPermission` are all the same kind of thing.
 
-**Why it matters:** students constantly mix these up and then write bugs like "the user is logged in, so show the admin panel". Being logged in is not the same as being an admin. In this app authentication gives you `isLoggedIn()`, and the `role` on the user is what drives authorization.
-
-```ts
-// authentication: do we know who this is?
-if (store.isLoggedIn()) { /* ... */ }
-
-// authorization: is this person allowed to do the thing?
-if (store.currentUser()?.role === 'ADMIN') { /* ... */ }
-```
-
-### What a JWT actually is
-
-A JSON Web Token is three Base64 strings joined by dots: `header.payload.signature`. The **payload** holds claims about the user (id, email, role, expiry). The **signature** is what the server computed with a secret only it knows.
-
-**Mental model:** a JWT is a *signed note*, not a *locked box*. Anyone who has the token can read the payload — paste one into [jwt.io](https://jwt.io) and see for yourself. What they cannot do is change it, because they can't recreate the signature.
+**Mental model:** Angular hands you a *blueprint* of some markup plus a *slot* in the page, and steps back. You decide if and when to stamp the blueprint into the slot.
 
 ```ts
-// The three parts, split apart by hand just to see what's in there:
-const [header, payload, signature] = token.split('.');
-console.log(JSON.parse(atob(payload)));
-// { sub: 7, email: 'ana@mango.dev', role: 'ADMIN', iat: 1757500000, exp: 1757503600 }
-```
-
-> **Note:** because the payload is readable by anyone, never put anything secret in a JWT — no passwords, no private data.
-
-### Access tokens and refresh tokens
-
-The **access token** is short-lived (minutes) and gets sent with every request. The **refresh token** is long-lived (days) and does exactly one thing: exchange it for a new access token.
-
-**Why two?** If a token leaks, you want the damage window small — hence the short expiry. But asking the user to log in every 15 minutes is awful, so the refresh token quietly renews the session in the background.
-
-```ts
-export type TokenState = {
-  accessToken: string | null;  // sent on every API call
-  refreshToken: string | null; // only used against /auth/refresh
-};
-```
-
-### Persisting tokens with a store feature
-
-`withTokenStorage()` is a `signalStoreFeature` whose entire job is "where do tokens live". It reads `localStorage` for its initial state and writes to it on every change.
-
-**Why a separate feature:** the `AuthStore` never touches `localStorage` directly. If you later move to cookies or `sessionStorage`, you edit one file and nothing else in the app notices.
-
-```ts
-export function withTokenStorage() {
-  return signalStoreFeature(
-    // read on startup - this single line is what survives a page refresh
-    withState<TokenState>({
-      accessToken: localStorage.getItem(ACCESS_TOKEN_KEY),
-      refreshToken: localStorage.getItem(REFRESH_TOKEN_KEY),
-    }),
-    withMethods((store) => ({
-      setTokens(accessToken: string, refreshToken: string): void {
-        patchState(store, { accessToken, refreshToken }); // signals -> UI updates now
-        localStorage.setItem(ACCESS_TOKEN_KEY, accessToken); // disk -> survives reload
-        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-      },
-      clearTokens() {
-        patchState(store, { accessToken: null, refreshToken: null });
-        localStorage.removeItem(ACCESS_TOKEN_KEY);
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
-      },
-    })),
-  );
+@Directive({ selector: '[appPermission]' })
+export class PermissionDirective {
+  allowedRole = input.required<UserRole>();
 }
 ```
 
-> **Note:** always write both places. Update only the signal and the user is logged out again after a refresh; update only `localStorage` and the navbar never changes.
+> **Note:** for the `*appPermission="'ADMIN'"` shorthand to bind, the input name must match the selector. In this repo the input is called `allowedRole`, so either rename it or add `input.required<UserRole>({ alias: 'appPermission' })`.
 
-### The AuthStore
+### TemplateRef and ViewContainerRef
 
-`AuthStore` composes the token feature with the user state and the login/register/logout methods.
+These two always come as a pair, and mixing them up is the number one structural-directive bug.
 
-**Why `providedIn: 'root'`:** auth *must* be a singleton. If every component got its own instance, logging in on the login page would not log you in on the navbar.
+| | What it is | What you do with it |
+|---|---|---|
+| `TemplateRef` | The markup you wrapped, as an unrendered blueprint | `createEmbeddedView(tpl)` |
+| `ViewContainerRef` | The position in the DOM where output goes | `clear()`, `createEmbeddedView(...)` |
 
 ```ts
-export const AuthStore = signalStore(
-  { providedIn: 'root' },
-  withTokenStorage(),          // contributes accessToken + setTokens/clearTokens
-  withState<AuthState>({ user: null }),
-  withComputed(/* ... */),
-  withMethods(/* ... */),
-);
+templateRef = inject(TemplateRef);
+viewContainerRef = inject(ViewContainerRef);
+
+this.viewContainerRef.clear();                          // remove what's there
+this.viewContainerRef.createEmbeddedView(this.templateRef); // stamp it out
 ```
 
-Feature order matters: `withTokenStorage()` comes first, so everything below it can use `store.setTokens()` and read `accessToken()`.
+**Why `clear()` first:** `createEmbeddedView` *adds*. Call it twice without clearing and you get two copies of the element side by side.
 
-### Derived auth state
+### Making a directive reactive with effect()
 
-`isLoggedIn` is **not** a stored boolean. It's a computed signal derived from the token.
-
-**Why:** two pieces of state that must agree will eventually disagree. Derive one from the other and the bug becomes impossible.
+The user's role can change while the page is open — they log out, or a refresh token brings back a different user. `effect()` re-runs your logic automatically whenever a signal it read has changed.
 
 ```ts
-withComputed(({ accessToken, user }) => ({
-  isLoggedIn: computed<boolean>(() => !!accessToken()),
-  // fall back to the token when we have no user object (i.e. after a refresh)
-  currentUser: computed<User | null>(() => user() ?? decodeToken(accessToken())),
-}))
-```
+effect(() => {
+  // Reading currentUser() HERE is what subscribes us to it.
+  const isAllowed = this.allowedRole() === this.authStore.currentUser()?.role;
 
-### Decoding the token
-
-After a page refresh the token is still in `localStorage`, but the `user` object is gone — it only ever lived in memory. `jwt-decode` rebuilds a partial user from the token's claims.
-
-```ts
-function decodeToken(token: string | null): User | null {
-  if (!token) return null;
-  try {
-    const payload = jwtDecode<TokenPayload>(token); // reads only - does NOT verify
-    return { id: payload.sub, email: payload.email, role: payload.role,
-             firstName: '', lastName: '', createdAt: '' };
-  } catch {
-    return null; // a tampered or garbage token must not crash the app
-  }
-}
-```
-
-> **Note:** `jwtDecode` does not check the signature. Never make a security decision on the client based on a decoded token — use it to pick which UI to show, and let the server enforce the rules.
-
-### Returning observables from store methods
-
-`login()` returns the observable instead of subscribing inside the store.
-
-**Why:** the store owns the *state* effect (saving tokens, via `tap`), the component owns the *UI* effect (toast, navigation) — and, crucially, the component can handle the error. A store that subscribes internally swallows failures.
-
-```ts
-login(body: Login) {
-  return authService.login(body).pipe(
-    tap((res) => {
-      store.setTokens(res.accessToken, res.refreshToken);
-      patchState(store, { user: res.user });
-    }),
-  ); // no .subscribe() here - the caller does that
-}
-```
-
-And in the component:
-
-```ts
-this.store.login(body).subscribe({
-  next: () => this.router.navigate(['/']),
-  error: (err) => this.notificationService.showError(err.error.message),
+  this.viewContainerRef.clear();
+  if (isAllowed) this.viewContainerRef.createEmbeddedView(this.templateRef);
 });
 ```
 
-### Reacting in the template
+No subscription, no `ngOnDestroy` — the effect dies with the directive.
 
-Nothing in the navbar wires itself to the login form. It just reads signals, and Angular does the rest.
+> **Note:** `effect()` must be created in an **injection context**: a field initialiser or the constructor. Call it from `ngOnInit` and you get `NG0203` unless you pass `{ injector: inject(Injector) }`. The code in this class does exactly that — fixing it is one of the exercises.
 
-```html
-@if (store.isLoggedIn()) {
-  <a routerLink="/account">{{ store.currentUser()?.email }}</a>
-  <button mat-icon-button (click)="store.logout()"><mat-icon>logout</mat-icon></button>
-} @else {
-  <a mat-stroked-button routerLink="/login">Login</a>
+### Dynamic components with createComponent()
+
+A confirmation dialog shouldn't require every page to add `<app-confirmation-dialog>` to its template "just in case". So you build it in code instead.
+
+```ts
+const ref = createComponent(ConfirmationDialogComponent, {
+  environmentInjector: this.injector,
+});
+
+this.appRef.attachView(ref.hostView);                        // change detection ON
+document.body.appendChild(ref.location.nativeElement);       // now it's visible
+```
+
+Those last two lines are both required and do different jobs. `attachView` makes the bindings live; `appendChild` puts the element on the page. Skip the first and your dialog renders once and then freezes. Skip the second and nothing appears at all.
+
+And tearing it down matters just as much:
+
+```ts
+private destroy(ref: ComponentRef<any>) {
+  this.appRef.detachView(ref.hostView);
+  ref.destroy(); // runs ngOnDestroy and removes the host element
 }
 ```
 
-Two gotchas in three lines: the store field must be **public** (a `private` field is invisible to the template), and `currentUser()?.email` needs the `?.` because the value is `User | null`.
+Forget this and every confirmation leaves an invisible dialog behind, still being change-detected on every tick.
 
-### Typing the API contract
+### setInput() and why you can't just assign
 
-Register returns a user; login returns a user *and* two tokens. Modelling them as one type with optional fields would force `res.accessToken!` at every call site.
+With no template, there's no `[title]="..."` binding to write. You push values in through the component ref:
 
 ```ts
-export type RegisterResponse = { user: User };
-export type LoginResponse = { user: User; accessToken: string; refreshToken: string };
+ref.setInput('title', title);
+ref.setInput('message', message);
 ```
 
-And `UserRole` is a union, not `string` — so `'admin'` (wrong case) fails to compile:
+**Why not `ref.instance.title = title`?** Because that bypasses Angular entirely — it sets the field but never marks the view dirty, so the screen keeps showing the old value. `setInput()` sets the value *and* schedules the re-render.
+
+> **Note:** `setInput` takes the input's name as a **string**, so TypeScript can't catch a typo. Misspell it and you get a runtime error, not a compile error.
+
+### Wrapping a dialog in a Promise
+
+The dialog emits events. Your calling code wants an answer. A `Promise` is the bridge.
 
 ```ts
-export type UserRole = 'USER' | 'ADMIN';
+confirm(title: string, message: string, confirmationLabel: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    // ...create the component...
+    ref.instance.confirm.subscribe(() => { this.destroy(ref); resolve(true); });
+    ref.instance.cancel.subscribe(()  => { this.destroy(ref); resolve(false); });
+  });
+}
 ```
 
-### Sending the token: HTTP interceptors
+A promise settles **exactly once**, which is a free bug fix: a frantic double-click can't produce two answers.
 
-Storing a token does nothing on its own — the API never sees it until you attach it to requests. An **interceptor** is a function that every outgoing `HttpClient` request passes through, so you add the header in one place instead of in ten services.
+### Dumb components: input() in, output() out
 
-**Mental model:** middleware for the browser. Request goes in, you hand a (possibly modified) request to `next()`, the response comes back out.
+`ConfirmationDialogComponent` knows nothing about orders, stores or HTTP. It renders text and shouts when a button is clicked. That's *why* it's reusable.
 
 ```ts
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const accessToken = inject(AuthStore).accessToken();
-  if (!accessToken) return next(req); // logged out - pass it straight through
-
-  // HttpRequest is IMMUTABLE. req.headers.set(...) does not stick - you must clone.
-  return next(req.clone({ setHeaders: { Authorization: `Bearer ${accessToken}` } }));
-};
+title = input.required<string>();
+confirm = output<void>();
+cancel = output<void>();
 ```
 
-Register it once in `app.config.ts`. The array order is the order requests travel through:
+The dialog never closes itself — it reports the click and lets the service decide what that means. Teach a dumb component about your feature and it stops being reusable in the next one.
+
+> **Note:** `input.required()` with no type argument infers `unknown`. It renders fine but you lose all type safety. Always write `input.required<string>()`.
+
+### The confirm-then-act pattern
+
+`async/await` turns "ask, then act" into a flat, top-to-bottom read:
 
 ```ts
-provideHttpClient(
-  withXhr(),
-  withInterceptors([loadingInterceptor, authInterceptor, refreshTokenInterceptor]),
+async handleCancellation(orderId: number) {
+  const confirmation = await this.confirmationService.confirm(
+    `Are you sure you want to cancel order #${orderId}?`,
+    'The order will be called off and the items returned to stock. This cannot be undone.',
+    'Cancel order',
+  );
+
+  if (!confirmation) return; // guard clause - bail out early on "no"
+
+  this.store.cancelOrder(orderId);
+}
+```
+
+Notice the template calls `handleCancellation(order.id)`, **not** the store directly. Templates should ask; components decide.
+
+### Cancelling an order end to end
+
+The store method chains three steps: flip the spinner on, send the PATCH, then refetch the list.
+
+```ts
+cancelOrder: rxMethod<number>(
+  pipe(
+    tap(() => patchState(store, { loading: true })),
+    switchMap((orderId) =>
+      orderService.cancelOrder(orderId).pipe(
+        tap(() => notificationService.showSuccess('Order canceled successfully.')),
+        catchError((err) => {
+          patchState(store, { loading: false });
+          notificationService.showError(err.error.message || 'Error while canceling order.');
+          return of(null); // swallow it - see the note below
+        }),
+      ),
+    ),
+    mergeMap(() => orderService.getMyOrders().pipe(/* setAllEntities */)),
+  ),
 )
 ```
 
-> **Note:** an interceptor that forgets to call `next(req)` silently swallows the request — no error, no network call, just an observable that never emits.
+Two things worth slowing down for:
 
-### Protecting routes: guards
+- **`catchError` returning `of(null)` keeps the `rxMethod` alive.** Let the error escape and the whole pipe completes — the *next* click silently does nothing. This is the single most common signal-store bug.
+- The API call is a **PATCH**, not a DELETE. Cancelling changes one field; the order stays in history so the customer and support can still see it.
 
-A **guard** is a function the router calls before it activates a route. Return `true` to allow it, or a `UrlTree` to redirect somewhere else.
-
-**Why return a `UrlTree` instead of calling `router.navigate()`:** the router cancels the current navigation and performs the redirect as one step. Calling `navigate()` inside a guard starts a *second* navigation while the first is still running — that's where flicker and redirect races come from.
-
-```ts
-export const authGuard: CanActivateFn = (route) => {
-  const auth = inject(AuthStore);
-  const router = inject(Router);
-  if (auth.isLoggedIn()) return true;
-  // remember where they wanted to go, so login can send them back
-  return router.createUrlTree(['/login'], { queryParams: { returnUrl: route.url } });
-};
-
-export const adminGuard: CanActivateFn = () => {
-  const auth = inject(AuthStore);
-  const router = inject(Router);
-  if (auth.isAdmin()) return true;
-  return router.createUrlTree(['/not-allowed']); // NOT /login - that's an infinite loop
-};
-```
-
-`canActivate` takes an array, and the guards run in order. `/admin` uses both, and the order is the point:
+On the API side:
 
 ```ts
-{ path: 'admin', canActivate: [authGuard, adminGuard], loadChildren: /* ... */ }
+cancelOrder(orderId: number): Observable<Order> {
+  return this.http.patch<Order>(`${this.apiUrl}/orders/${orderId}/status`, {
+    status: 'CANCELLED',
+  });
+}
 ```
 
-Anonymous visitor → `authGuard` sends them to `/login`. Logged-in `USER` → `adminGuard` sends them to `/not-allowed`. And because the guards run before the lazy chunk downloads, a non-admin never even fetches the admin JavaScript.
+And the button only exists while cancelling still makes sense:
 
-> **Note:** guards are a *usability* feature, not security. Anyone can flip a signal in DevTools and route themselves into `/admin` — they just get an empty page, because the API refuses their requests.
+```html
+@if (order.status === 'PENDING') {
+  <button mat-stroked-button color="warn" (click)="handleCancellation(order.id)">
+    <mat-icon>cancel</mat-icon> Cancel Order
+  </button>
+}
+```
 
-### Refreshing an expired token
+### takeUntilDestroyed
 
-The access token dies after a few minutes. Rather than logging the user out mid-click, `refreshTokenInterceptor` catches the `401`, exchanges the refresh token for a new pair, and **retries the original request**. The component that made the call never learns any of this happened.
+Checkout navigates away as soon as the order succeeds. If the request is still in flight when the component dies, the callback still runs — on a component that no longer exists.
 
 ```ts
-return next(req).pipe(
-  catchError((err: HttpErrorResponse) => {
-    if (err.status !== 401 || !auth.refreshToken()) return throwError(() => err);
-
-    return auth.refresh().pipe(
-      // switchMap replaces the refresh observable with a retry of the original request
-      switchMap((res) =>
-        next(req.clone({ setHeaders: { Authorization: `Bearer ${res.accessToken}` } })),
-      ),
-      catchError((refreshErr) => {
-        auth.logout(); // the refresh token is dead too - the session really is over
-        return throwError(() => refreshErr);
-      }),
-    );
-  }),
-);
+this.orderService
+  .create(body)
+  .pipe(takeUntilDestroyed(this.destroyRef))
+  .subscribe({ /* ... */ });
 ```
 
-Two things that look optional and are not:
-
-- The guard at the top, `if (isRefreshRequest(req)) return next(req);`. Without it, a failing refresh call triggers another refresh, forever.
-- Setting the header from `res.accessToken` on the retry. Re-cloning `req` without it resends the *expired* token, and you get a 401 loop that looks like a backend bug.
+`takeUntilDestroyed()` with no argument only works in an injection context. Outside one — like inside a method — you must pass `inject(DestroyRef)`, which is why the component holds a `destroyRef` field.
 
 ## Theory
 
-### Why the client can never be trusted
+### Why `*ngIf` has a star
 
-Everything in your Angular app runs on the user's machine. They can open DevTools, edit a signal, flip `isLoggedIn` to `true`, and route themselves into `/admin`. And that's fine — because the admin page's data still comes from the API, and the API rejects requests without a valid token.
+The star is pure syntax sugar. Angular rewrites this:
 
-Client-side auth decides **what to render**. Server-side auth decides **what is allowed**. A guard that hides the admin link is a usability feature, not a security feature.
+```html
+<a *appPermission="'ADMIN'" routerLink="/admin">Admin</a>
+```
 
-### localStorage vs. httpOnly cookies
+into this:
 
-| | localStorage | httpOnly cookie |
+```html
+<ng-template appPermission [appPermission]="'ADMIN'">
+  <a routerLink="/admin">Admin</a>
+</ng-template>
+```
+
+Once you see the desugared form, everything about structural directives clicks: the `<ng-template>` is your `TemplateRef` (markup that exists but isn't rendered), and its position in the DOM is your `ViewContainerRef`. That's also why **two structural directives can't sit on one element** — they'd both want the same template.
+
+### The three ways to put a component on screen
+
+| Way | Looks like | Use it when |
 |---|---|---|
-| Readable by JS | Yes | No |
-| Vulnerable to XSS token theft | Yes | No |
-| Vulnerable to CSRF | No | Yes (needs SameSite / CSRF tokens) |
-| Sent automatically | No — you attach it yourself | Yes, by the browser |
-| Works across subdomains/APIs | Easily | Needs configuration |
+| Template tag | `<app-dialog />` | The parent always knows it needs this child |
+| Structural directive | `@if`, `*appPermission` | The child exists conditionally, in a known place |
+| `createComponent()` | TypeScript only | A **service** needs UI, or the place/type isn't known until runtime |
 
-This app uses `localStorage` because it's simple to see and debug while learning. Production apps that handle money or personal data usually put the refresh token in an `httpOnly` cookie and keep the access token in memory only. Know the trade-off and be able to explain it in an interview.
+The confirmation dialog is case three: any component in the app can ask a question, and none of them should have to make room for the dialog in advance.
 
-### Surviving a page refresh
+### Promise or Observable?
 
-A page refresh destroys every JavaScript object your app ever created — signals, services, the store, all of it. The only things that survive are what you wrote somewhere durable.
+Both represent "a value later". Pick by asking **how many values, and can I cancel?**
 
-That's why the flow is:
+| | Promise | Observable |
+|---|---|---|
+| Emits | Exactly one, ever | Zero to many |
+| Starts | Immediately on creation | Only when subscribed |
+| Cancellable | No | Yes (unsubscribe) |
+| `await`-able | Yes | Only via `firstValueFrom()` |
 
-1. `withTokenStorage()` seeds its state straight from `localStorage` when the store is first constructed.
-2. `isLoggedIn` is computed from that token, so it's already `true` on the first render.
-3. `user` is `null` (it never persisted), so `currentUser` falls back to `decodeToken()`.
+A dialog answer is one value that can't be un-answered — a natural `Promise`. An HTTP request you might want to abandon, or a stream of store updates, is a natural `Observable`. Don't convert one to the other out of habit; convert when the shape of the question changes.
 
-If you ever see a flash of the logged-out navbar on reload, it's because something read the token *asynchronously* instead of during construction.
+### Refetch vs. patch after a write
 
-### The full request lifecycle
+After cancelling, the store throws away its list and asks the server for a fresh one. It could instead patch just that one order's status locally — one fewer request.
 
-Follow one click through the whole stack and the pieces stop feeling like separate files:
+Refetching wins here because the server may have changed more than you asked for: stock returns to inventory, totals recalculate, a status might land as something other than `CANCELLED`. One extra GET is cheap; a UI that quietly disagrees with the database is expensive. Reach for a local patch only when the list is huge or the update is very hot.
 
-1. A component calls `orderService.getOrders()`.
-2. `loadingInterceptor` flips the progress bar on.
-3. `authInterceptor` clones the request and attaches `Authorization: Bearer <token>`.
-4. The API answers `401` — the access token expired ten seconds ago.
-5. `refreshTokenInterceptor` catches it, calls `/auth/refresh` with the refresh token.
-6. `AuthStore.refresh()` `tap`s the new pair into `setTokens()` → signals update, `localStorage` updates.
-7. `switchMap` retries the original request with the new token. It succeeds.
-8. The component's `next` callback runs. It has no idea anything went wrong.
+### Known rough edges in this code
 
-If the refresh had failed, step 6 becomes `auth.logout()` — tokens cleared, `isLoggedIn()` flips to `false`, the navbar swaps to **Login** on its own, and the router lands on `/login`.
+This is teaching code, and a few things in it are deliberately (or accidentally) imperfect. Spotting them is part of the class:
 
-### What still has to be built
-
-Login, interceptors, guards and refresh all work now. What's still rough:
-
-- **Expiry is never checked on the client.** `exp` sits in the payload and nothing reads it, so an expired token looks exactly like a valid one to `isLoggedIn()`. The app finds out only when a request comes back `401`.
-- **Concurrent refreshes.** Five requests failing at once fire five refresh calls. A real implementation shares one in-flight refresh and queues the rest behind it.
-- **`returnUrl` is captured but never used.** The login component ignores the query param and always navigates to `/`.
-- **The refresh token never rotates out of `localStorage`.** Logging out on one tab leaves another tab's in-memory state stale.
-
-Those are the exercises below.
+- **`effect()` inside `ngOnInit`** in `PermissionDirective` throws `NG0203` — it needs the constructor or an explicit injector.
+- **The input name doesn't match the selector**, so `*appPermission="'ADMIN'"` won't bind `allowedRole`.
+- **The refetch runs even after a failed cancel**, because `catchError` turned the failure into a successful `of(null)` before `mergeMap` ran.
+- **`input.required()` is untyped** in the dialog, so every value is `unknown`.
+- **Nothing closes the dialog on `Escape` or on a backdrop click** — keyboard users are stuck with the mouse.
 
 ## Useful Links
 
 | Topic | Link |
 |---|---|
-| NgRx Signal Store | https://ngrx.io/guide/signals/signal-store |
-| Custom store features | https://ngrx.io/guide/signals/signal-store/custom-store-features |
-| `rxMethod` | https://ngrx.io/guide/signals/rxjs-integration |
-| Angular route guards (`CanActivateFn`) | https://angular.dev/api/router/CanActivateFn |
-| Angular HTTP interceptors | https://angular.dev/guide/http/interceptors |
-| Angular `inject()` | https://angular.dev/api/core/inject |
-| Angular signals | https://angular.dev/guide/signals |
-| Template-driven forms | https://angular.dev/guide/forms/template-driven-forms |
-| `jwt-decode` | https://github.com/auth0/jwt-decode |
-| JWT introduction & debugger | https://jwt.io/introduction |
-| MDN — `localStorage` | https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage |
-| MDN — `Authorization` header | https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization |
-| OWASP — JWT cheat sheet | https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html |
-| Angular Material toolbar | https://material.angular.io/components/toolbar |
+| Structural directives | https://angular.dev/guide/directives/structural-directives |
+| Writing custom directives | https://angular.dev/guide/directives/attribute-directives |
+| `TemplateRef` | https://angular.dev/api/core/TemplateRef |
+| `ViewContainerRef` | https://angular.dev/api/core/ViewContainerRef |
+| `createComponent()` | https://angular.dev/api/core/createComponent |
+| `ComponentRef` (incl. `setInput`) | https://angular.dev/api/core/ComponentRef |
+| `ApplicationRef` | https://angular.dev/api/core/ApplicationRef |
+| Signal `effect()` | https://angular.dev/guide/signals#effects |
+| Signal inputs | https://angular.dev/guide/components/inputs |
+| Component outputs | https://angular.dev/guide/components/outputs |
+| `takeUntilDestroyed` | https://angular.dev/api/core/rxjs-interop/takeUntilDestroyed |
+| NgRx `rxMethod` | https://ngrx.io/guide/signals/rxjs-integration |
+| NgRx entity helpers | https://ngrx.io/guide/signals/signal-store/entity-management |
+| Angular Material Dialog (the built-in alternative) | https://material.angular.io/components/dialog |
+| MDN — `Promise` | https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise |
+| MDN — `inset` | https://developer.mozilla.org/en-US/docs/Web/CSS/inset |
 
 ## Mini Examples
 
-### 1. An interceptor that adds a correlation id
+### 1. A structural directive that repeats N times
 
-Same shape as `authInterceptor`, different job — proof that "clone, modify, forward" is the whole pattern.
-
-```ts
-export const correlationIdInterceptor: HttpInterceptorFn = (req, next) => {
-  // Tag every request so you can match a frontend action to a backend log line.
-  const id = crypto.randomUUID();
-
-  // setHeaders MERGES into existing headers. Use `headers:` instead and you REPLACE
-  // them all - including the Authorization header an earlier interceptor just added.
-  return next(req.clone({ setHeaders: { 'X-Correlation-Id': id } })).pipe(
-    tap({ error: (err) => console.error(`request ${id} failed`, err) }),
-  );
-};
-```
-
-### 2. A guard that blocks leaving a dirty form
-
-Not every guard is about auth. `CanDeactivateFn` runs when the user tries to navigate *away*.
+Same primitives as `PermissionDirective`, no auth involved — proof that the pattern is about DOM, not roles.
 
 ```ts
-export const unsavedChangesGuard: CanDeactivateFn<CheckoutComponent> = (component) => {
-  if (!component.form.dirty) return true;
-  // Returning false CANCELS the navigation and leaves the URL where it was.
-  return confirm('You have unsaved changes. Leave anyway?');
-};
+@Directive({ selector: '[appRepeat]' })
+export class RepeatDirective {
+  times = input.required<number>({ alias: 'appRepeat' });
 
-// app.routes.ts
-{ path: 'checkout', component: CheckoutComponent, canDeactivate: [unsavedChangesGuard] }
-```
-
-### 3. Checking token expiry
-
-```ts
-withComputed(({ accessToken }) => ({
-  isLoggedIn: computed(() => {
-    const token = accessToken();
-    if (!token) return false;
-    try {
-      // exp is in SECONDS, Date.now() is in MILLISECONDS - the classic off-by-1000 bug.
-      const { exp } = jwtDecode<TokenPayload>(token);
-      return exp * 1000 > Date.now();
-    } catch {
-      return false;
-    }
-  }),
-}))
-```
-
-### 4. A role-based directive
-
-```ts
-@Directive({ selector: '[appHasRole]' })
-export class HasRoleDirective {
-  private store = inject(AuthStore);
-  private view = inject(ViewContainerRef);
-  private tpl = inject(TemplateRef<unknown>);
-
-  role = input.required<UserRole>({ alias: 'appHasRole' });
+  private tpl = inject(TemplateRef<{ $implicit: number }>);
+  private vcr = inject(ViewContainerRef);
 
   constructor() {
-    // effect() re-runs whenever currentUser() changes - log out and the element disappears.
     effect(() => {
-      this.view.clear();
-      if (this.store.currentUser()?.role === this.role()) {
-        this.view.createEmbeddedView(this.tpl);
+      this.vcr.clear();
+      // The context object is what `let i` in the template binds to.
+      for (let i = 0; i < this.times(); i++) {
+        this.vcr.createEmbeddedView(this.tpl, { $implicit: i });
       }
     });
   }
 }
 
-// <a *appHasRole="'ADMIN'" routerLink="/admin">Admin</a>
+// <span *appRepeat="3; let i">star {{ i }}</span>
+```
+
+### 2. A toast service built with createComponent()
+
+The confirmation pattern minus the promise — fire and forget.
+
+```ts
+@Injectable({ providedIn: 'root' })
+export class ToastService {
+  private appRef = inject(ApplicationRef);
+  private injector = inject(EnvironmentInjector);
+
+  show(text: string) {
+    const ref = createComponent(ToastComponent, { environmentInjector: this.injector });
+    ref.setInput('text', text);
+    this.appRef.attachView(ref.hostView);
+    document.body.appendChild(ref.location.nativeElement);
+
+    // Always clean up on a timer too - otherwise the node lives forever.
+    setTimeout(() => { this.appRef.detachView(ref.hostView); ref.destroy(); }, 3000);
+  }
+}
+```
+
+### 3. Closing the dialog with the Escape key
+
+```ts
+export class ConfirmationDialogComponent {
+  cancel = output<void>();
+
+  // HostListener wires a DOM event on the HOST element. 'document:keydown.escape' listens
+  // globally, so focus doesn't have to be inside the dialog for it to work.
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    this.cancel.emit();
+  }
+}
+```
+
+### 4. Turning the promise back into an observable
+
+Sometimes you're already in a pipe and don't want to break out into `async/await`.
+
+```ts
+// `from()` converts a Promise into an Observable that emits once and completes.
+from(this.confirmationService.confirm('Delete?', 'This is permanent.', 'Delete'))
+  .pipe(
+    filter(Boolean),                       // drop the "no" - nothing downstream runs
+    switchMap(() => this.orderService.cancelOrder(id)),
+  )
+  .subscribe();
 ```
 
 ## Practice Exercises
 
-### Beginner — hide the Admin link
+### Beginner — type the dialog inputs
 
-The navbar still shows **Admin** to everyone, including logged-out visitors.
+`ConfirmationDialogComponent` declares `input.required()` with no type argument, so every value is `unknown`.
 
-- Wrap the admin link in an `@if` that checks the user's role.
-- Confirm it disappears when you log out and reappears when you log in as an admin.
-- Then open `/admin` by typing the URL directly — it still loads. Explain in one sentence why hiding the link is not security.
+- Give all three inputs an explicit `<string>`.
+- Then try passing a number from `ConfirmationService` and watch where the error appears — and where it *doesn't*, because `setInput` takes a string key.
 
-### Beginner — show the user's name, not their email
+### Beginner — use the directive in the navbar
 
-`currentUser()` returns empty strings for `firstName`/`lastName` after a refresh, because the JWT doesn't carry them.
+The navbar still guards the Admin link with `@if (store.isAdmin())`.
 
-- Display `firstName lastName` when you have it, and fall back to the email when you don't.
-- Verify the difference: log in (full name shows) then hit F5 (fallback shows).
+- Replace it with `*appPermission="'ADMIN'"`.
+- It won't work at first. Fix the two reasons why (read the [rough edges](#known-rough-edges-in-this-code) section).
+- Prove it's reactive: log out with the page open and watch the link vanish without a reload.
 
-### Beginner — a logout confirmation
+### Beginner — fix the effect
 
-- Add a Material dialog or a simple `confirm()` before `store.logout()` runs.
-- Make sure cancelling really does leave the tokens in `localStorage` — check the Application tab in DevTools.
+Move the `effect()` in `PermissionDirective` out of `ngOnInit` and into the constructor.
 
-### Intermediate — honour `returnUrl`
+- Confirm the `NG0203` error disappears.
+- Then write one sentence explaining, in your own words, what "injection context" means.
 
-`authGuard` already puts a `returnUrl` on the login redirect, and `LoginComponent` throws it away.
+### Intermediate — make the dialog dismissible
 
-- Read it with `inject(ActivatedRoute).snapshot.queryParamMap.get('returnUrl')`.
-- Navigate there after a successful login, falling back to `/` when it's missing.
-- Test it: log out, paste `/orders` in the address bar, log in, and land on `/orders`.
+Right now the only way out is the two buttons.
 
-**Hint:** never trust the value blindly — a full URL in that param is an open-redirect bug. Only accept paths that start with a single `/`.
+- Close on `Escape` (see mini example 3).
+- Close when the user clicks the dark backdrop — but **not** when they click inside the card.
+- Both should resolve the promise with `false`, exactly like Cancel.
 
-### Intermediate — skip the token on auth endpoints
+**Hint:** for the backdrop, check `event.target === event.currentTarget` on the overlay's click handler.
 
-`authInterceptor` attaches the token to *every* request, including `/auth/login` and `/auth/register`.
+### Intermediate — don't refetch after a failed cancel
 
-- Skip those two endpoints, the way `refreshTokenInterceptor` already skips `/auth/refresh`.
-- Explain in one sentence why sending a stale token to the login endpoint is at best pointless.
+In `OrdersStore.cancelOrder`, the `mergeMap` refetch runs even when the PATCH failed, because `catchError` already turned the failure into a success.
 
-**Hint:** `req.url` tells you which endpoint you're intercepting. Pull the check into a small exported helper so you can test it.
+- Restructure so the refetch only runs on the success path.
+- Test it by pointing `cancelOrder` at a bad URL: you should see one error toast and **no** follow-up GET in the Network tab.
 
-### Intermediate — handle expired tokens
+### Intermediate — a reusable `appPermission` that takes many roles
 
-- Extend `isLoggedIn` to check `exp`, as in mini example 3.
-- On app start, clear the tokens if the stored one is already expired.
-- Test it by asking the backend for a token with a very short expiry, or by hand-editing `exp` in `localStorage` and reloading.
+`allowedRole` accepts exactly one role, so showing something to two different roles means two directives.
 
-### Challenge — refresh once, not five times
+- Change the input to accept `UserRole | UserRole[]`.
+- Keep the single-role usage working unchanged.
+- Add an "unless" variant — `*appPermissionExcept="'USER'"` — and say which one you'd rather maintain, and why.
 
-`refreshTokenInterceptor` works, but it doesn't handle concurrency. Load a page that fires four parallel requests with an expired token and watch the Network tab: four calls to `/auth/refresh`.
+### Challenge — make the dialog accessible
 
-- Hold a single shared in-flight refresh observable at module scope.
-- When a `401` arrives and a refresh is already running, **wait on that one** instead of starting another.
-- Clear the shared observable once it settles, success or failure, so the *next* expiry can refresh again.
-- Verify with the Network tab: four failed requests, exactly one refresh, four successful retries.
+Screen-reader users currently get nothing useful from this dialog.
 
-**Hint:** `shareReplay({ bufferSize: 1, refCount: false })` plus a module-level `let pending: Observable<RefreshResponse> | null`. Expect this one to take a while — that's the point.
+- Add `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` / `aria-describedby` pointing at the title and message.
+- Move focus to the confirm button when it opens, and **back to the element that opened it** when it closes.
+- Trap Tab inside the dialog so focus can't wander into the page behind.
+- Then open Angular Material's `MatDialog` source and compare. Write three sentences on when you'd build this yourself versus reach for the library.
 
-### Challenge — a `hasRole` structural directive
+### Challenge — one dialog at a time
 
-Replace the `@if (store.isAdmin())` blocks with the reusable directive from mini example 4.
+Call `confirm()` twice in a row without awaiting and you get two stacked dialogs, both live.
 
-- Build `HasRoleDirective` so `*appHasRole="'ADMIN'"` shows an element only for that role.
-- Use it on the navbar's Admin link and on any admin-only button.
-- Prove it's reactive: log out while the page is open and watch the element disappear without a reload.
-- Then answer honestly: does this directive make the app more *secure*? Why not?
+- Keep a reference to the currently-open dialog in the service.
+- Decide the policy — queue the second one, reject it, or replace the first — and defend your choice in a comment.
+- Prove the old component ref is actually destroyed, not just hidden, using the Angular DevTools component tree.

@@ -22,6 +22,8 @@
             <img [src]="item.product.image" [alt]="item.product.name" class="line-image" />
             <a [routerLink]="['/products', item.product.id]">{{ item.product.name }}</a>
             <span class="line-quantity">{{ item.quantity }} items</span>
+            <!-- item.price is the price PER UNIT, frozen at order time - multiply it here rather
+                 than trusting today's product price, which may have changed since. -->
             <span class="line-price">{{ item.price * item.quantity | currency: 'EUR' }}</span>
           </div>
         }
@@ -36,6 +38,8 @@
           {{ order.shippingPostalCode }}, {{ order.shippingCountry }}</span
         >
 
+        <!-- Only a PENDING order can still be called off - once it ships, cancelling is the
+             warehouse's problem, not a button's. Hide the action rather than disabling it. -->
         @if (order.status === 'PENDING') {
           <button
             mat-stroked-button

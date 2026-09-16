@@ -73,6 +73,8 @@ export class CheckoutComponent {
 
     this.orderService
       .create(body)
+      // Auto-unsubscribes when this component is destroyed. Without it, navigating away
+      // mid-request still runs the success callback - on a component that no longer exists.
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (order) => {

@@ -23,6 +23,8 @@ export class OrderService {
     return this.http.post<Order>(`${this.apiUrl}/orders`, body);
   }
 
+  // PATCH, not DELETE: cancelling doesn't remove the order, it changes one field on it.
+  // The order stays in history so the customer (and support) can still see what happened.
   cancelOrder(orderId: number): Observable<Order> {
     return this.http.patch<Order>(`${this.apiUrl}/orders/${orderId}/status`, {
       status: 'CANCELLED',

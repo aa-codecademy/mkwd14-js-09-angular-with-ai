@@ -1,8 +1,12 @@
+/* inset: 0 is shorthand for top/right/bottom/left: 0 - with position: fixed that stretches
+   the backdrop over the whole viewport, so clicks can never reach the page behind it. */
 .overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
+  /* Must beat anything it covers. Material toolbars sit around 100, so 1000 is a safe margin. */
   z-index: 1000;
+  /* The three-line recipe for perfectly centring a box, horizontally and vertically. */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -19,6 +23,8 @@
   margin-bottom: 16px;
 }
 
+/* mat-icon renders a font glyph, so font-size scales the drawing - but width/height stay at
+   the default 24px and the icon gets clipped. Always set all three together. */
 .warning-icon {
   font-size: 48px;
   width: 48px;

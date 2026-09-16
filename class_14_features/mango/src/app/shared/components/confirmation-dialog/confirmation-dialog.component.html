@@ -1,11 +1,16 @@
+<!-- The overlay is the dimmed backdrop AND the centring layer (see the .css flexbox rules). -->
 <div class="overlay">
   <mat-card class="dialog">
     <div class="icon-wrapper">
       <mat-icon class="warning-icon">warning</mat-icon>
     </div>
+    <!-- Signal inputs are FUNCTIONS - the () is mandatory. Write {{ title }} and you render
+         "[object Object]" instead of the text. -->
     <h2 class="title">{{ title() }}</h2>
     <p class="message">{{ message() }}</p>
     <div class="actions">
+      <!-- emit() FIRES the output. Pass the method reference without () anywhere else and
+           nothing happens; call it here without emit and you just read the output object. -->
       <button mat-stroked-button (click)="cancel.emit()">Cancel</button>
       <button mat-flat-button (click)="confirm.emit()">{{ confirmationLabel() }}</button>
     </div>

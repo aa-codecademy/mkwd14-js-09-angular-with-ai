@@ -20,10 +20,15 @@ export class OrdersComponent implements OnInit {
   store = inject(OrdersStore);
   confirmationService = inject(ConfirmationService);
 
+  // The store is providedIn: 'root', so it survives navigation - it will NOT refetch by itself
+  // when you come back to this page. Kicking the load off here is what keeps the list fresh.
   ngOnInit(): void {
+    // rxMethod with a void input is called with no arguments.
     this.store.loadMyOrders();
   }
 
+  // `async` here buys you a flat, readable flow: ask, wait for the answer, then act.
+  // The await suspends this method until the user clicks - nothing else in the app blocks.
   async handleCancellation(orderId: number) {
     const confirmation = await this.confirmationService.confirm(
       `Are you sure you want to cancel order #${orderId}?`,
@@ -31,6 +36,7 @@ export class OrdersComponent implements OnInit {
       'Cancel order',
     );
 
+    // Guard clause: bail out early on "no". Cheaper to read than wrapping the rest in an if.
     if (!confirmation) {
       return;
     }

@@ -66,14 +66,20 @@ export const OrdersStore = signalStore(
 
       return {
         loadMyOrders,
+        // rxMethod<number> = call it as cancelOrder(7) and that number flows through the pipe.
+        // It manages its own subscription and tears it down with the store - nothing to clean up.
         cancelOrder: rxMethod<number>(
           pipe(
             tap(() => patchState(store, { loading: true })),
+            // switchMap CANCELS a previous in-flight cancel if a second one starts. For a write
+            // like this that's a deliberate choice: the last click is the one that counts.
             switchMap((orderId) =>
               orderService.cancelOrder(orderId).pipe(
                 tap(() => {
                   notificationService.showSuccess('Order canceled successfully.');
                 }),
+                // Swallowing the error with of(null) keeps the rxMethod ALIVE. Let the error
+                // escape instead and the whole pipe completes - the next click does nothing.
                 catchError((err) => {
                   patchState(store, { loading: false });
                   notificationService.showError(
@@ -83,10 +89,16 @@ export const OrdersStore = signalStore(
                 }),
               ),
             ),
+            // Refetch instead of patching the one order locally: the server may have changed more
+            // than the status (stock, totals), and one extra GET is cheaper than a stale UI.
+            // GOTCHA: this also runs after a FAILED cancel, because catchError above turned the
+            // failure into a successful of(null). Move the refetch inside the success tap to fix it.
             mergeMap(() =>
               orderService.getMyOrders().pipe(
                 tap((res) => patchState(store, setAllEntities(res), { loading: false })),
-                catchError((err) => {
+                // of() with no arguments completes WITHOUT emitting - fine here, since there's
+                // nothing downstream that needs a value. of(null) would emit one.
+                catchError(() => {
                   patchState(store, { loading: false });
                   return of();
                 }),
