@@ -107,7 +107,7 @@
               color="warn"
               type="button"
               class="cancel-red-button"
-              (click)="store.updateStatus({ order, newStatus: 'CANCELLED' })"
+              (click)="handleCancel(order)"
             >
               Cancel
             </button>

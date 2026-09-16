@@ -1,3 +1,5 @@
+import type { UserRole } from './user.model';
+
 export interface Login {
   email: string;
   password: string;
@@ -13,6 +15,6 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: string;
+  role: UserRole;
   createdAt: string;
 }

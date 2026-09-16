@@ -1,0 +1,45 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog {
+  max-width: 400px;
+  padding: 32px;
+  margin: 16px;
+}
+
+.icon-wrapper {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.warning-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: #d32f2f;
+}
+
+.title {
+  text-align: center;
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+
+.message {
+  color: #666;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}

@@ -22,4 +22,10 @@ export class OrderService {
   create(body: CreateOrder): Observable<Order> {
     return this.http.post<Order>(`${this.apiUrl}/orders`, body);
   }
+
+  cancelOrder(orderId: number): Observable<Order> {
+    return this.http.patch<Order>(`${this.apiUrl}/orders/${orderId}/status`, {
+      status: 'CANCELLED',
+    });
+  }
 }

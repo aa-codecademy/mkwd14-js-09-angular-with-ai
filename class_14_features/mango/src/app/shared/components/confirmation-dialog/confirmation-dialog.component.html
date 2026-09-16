@@ -1,0 +1,13 @@
+<div class="overlay">
+  <mat-card class="dialog">
+    <div class="icon-wrapper">
+      <mat-icon class="warning-icon">warning</mat-icon>
+    </div>
+    <h2 class="title">{{ title() }}</h2>
+    <p class="message">{{ message() }}</p>
+    <div class="actions">
+      <button mat-stroked-button (click)="cancel.emit()">Cancel</button>
+      <button mat-flat-button (click)="confirm.emit()">{{ confirmationLabel() }}</button>
+    </div>
+  </mat-card>
+</div>

@@ -18,7 +18,34 @@
 
       <div class="order-items">
         @for (item of order.items; track item.id) {
-          <span>{{ item.price | currency: 'EUR' }}</span>
+          <div class="order-line">
+            <img [src]="item.product.image" [alt]="item.product.name" class="line-image" />
+            <a [routerLink]="['/products', item.product.id]">{{ item.product.name }}</a>
+            <span class="line-quantity">{{ item.quantity }} items</span>
+            <span class="line-price">{{ item.price * item.quantity | currency: 'EUR' }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="order-footer">
+        <mat-icon class="shipping-icon">local_shipping</mat-icon>
+        <span
+          >{{ order.shippingFirstName }} {{ order.shippingLastName }} &middot;{{
+            order.shippingStreet
+          }}
+          {{ order.shippingPostalCode }}, {{ order.shippingCountry }}</span
+        >
+
+        @if (order.status === 'PENDING') {
+          <button
+            mat-stroked-button
+            color="warn"
+            type="button"
+            class="cancel-button"
+            (click)="handleCancellation(order.id)"
+          >
+            <mat-icon>cancel</mat-icon> Cancel Order
+          </button>
         }
       </div>
     </mat-card>

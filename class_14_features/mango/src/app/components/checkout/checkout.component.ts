@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, type FormGroup } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -12,6 +12,7 @@ import { OrderService } from '../../shared/services/order.service';
 import type { CreateOrder } from '../../core/models/order.model';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../shared/services/notification.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-checkout',
@@ -34,6 +35,7 @@ export class CheckoutComponent {
   private orderService = inject(OrderService);
   private router = inject(Router);
   private notificationService = inject(NotificationService);
+  private destroyRef = inject(DestroyRef);
 
   // Real-world reactive form used inside a Material stepper - each mat-step can be gated on
   // a form's validity via [stepControl], so users can't advance past an invalid step.
@@ -69,19 +71,22 @@ export class CheckoutComponent {
       shippingAddress: this.addressForm.value,
     };
 
-    this.orderService.create(body).subscribe({
-      next: (order) => {
-        console.log(order);
-        // Clear the cart only after the server confirms - never optimistically before.
-        this.cartService.clear();
-        this.notificationService.showSuccess('Order submitted successfully!');
-        this.router.navigate(['/orders']);
-      },
-      // Prefer the server's message when there is one, and fall back to something human-readable.
-      error: (error) =>
-        this.notificationService.showError(
-          error.error?.message || 'Issue while submitting the order.',
-        ),
-    });
+    this.orderService
+      .create(body)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (order) => {
+          console.log(order);
+          // Clear the cart only after the server confirms - never optimistically before.
+          this.cartService.clear();
+          this.notificationService.showSuccess('Order submitted successfully!');
+          this.router.navigate(['/orders']);
+        },
+        // Prefer the server's message when there is one, and fall back to something human-readable.
+        error: (error) =>
+          this.notificationService.showError(
+            error.error?.message || 'Issue while submitting the order.',
+          ),
+      });
   }
 }

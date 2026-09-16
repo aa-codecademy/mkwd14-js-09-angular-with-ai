@@ -44,7 +44,7 @@ export const OrdersStore = signalStore(
       orderService = inject(OrderService),
       notificationService = inject(NotificationService),
     ) => {
-      const load = rxMethod<void>(
+      const loadMyOrders = rxMethod<void>(
         pipe(
           tap(() => patchState(store, { loading: true })),
           switchMap(() =>
@@ -65,14 +65,36 @@ export const OrdersStore = signalStore(
       );
 
       return {
-        _load: load,
+        loadMyOrders,
+        cancelOrder: rxMethod<number>(
+          pipe(
+            tap(() => patchState(store, { loading: true })),
+            switchMap((orderId) =>
+              orderService.cancelOrder(orderId).pipe(
+                tap(() => {
+                  notificationService.showSuccess('Order canceled successfully.');
+                }),
+                catchError((err) => {
+                  patchState(store, { loading: false });
+                  notificationService.showError(
+                    err.error.message || 'Error while canceling order.',
+                  );
+                  return of(null);
+                }),
+              ),
+            ),
+            mergeMap(() =>
+              orderService.getMyOrders().pipe(
+                tap((res) => patchState(store, setAllEntities(res), { loading: false })),
+                catchError((err) => {
+                  patchState(store, { loading: false });
+                  return of();
+                }),
+              ),
+            ),
+          ),
+        ),
       };
     },
   ),
-
-  withHooks({
-    onInit(store) {
-      store._load();
-    },
-  }),
 );
