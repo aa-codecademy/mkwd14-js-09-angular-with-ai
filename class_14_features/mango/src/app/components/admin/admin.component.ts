@@ -5,7 +5,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { AdminProductsStore } from '../../store/products/admin-products.store';
-import { ProductFiltersComponent } from "../../shared/components/product-filters/product-filters.component";
+import { ProductFiltersComponent } from '../../shared/components/product-filters/product-filters.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 // Placeholder landing page for the /admin area - the product list/table goes here next class.
 // Note `template: ''` (inline, empty) instead of templateUrl: handy while scaffolding.
@@ -14,14 +15,15 @@ import { ProductFiltersComponent } from "../../shared/components/product-filters
   templateUrl: './admin.component.html',
   styleUrl: './admin.component.css',
   imports: [
+    TranslatePipe,
     RouterLink,
     MatAnchor,
     MatIconModule,
     MatButtonModule,
     MatTableModule,
     PaginationComponent,
-    ProductFiltersComponent
-],
+    ProductFiltersComponent,
+  ],
 })
 export class AdminComponent {
   readonly store = inject(AdminProductsStore);

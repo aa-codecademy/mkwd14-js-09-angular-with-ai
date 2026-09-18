@@ -9,9 +9,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import type { SortDirection } from '../../../core/types/sort-direction.type';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   imports: [
+    TranslatePipe,
     MatInputModule,
     MatIconModule,
     FormsModule,

@@ -3,8 +3,8 @@
     <mat-card-content class="card-content-padded">
       <div class="auth-header">
         <mat-icon>spa</mat-icon>
-        <h1 class="auth-title">Sign In</h1>
-        <p class="auth-subtitle">Welcomer back to Mango</p>
+        <h1 class="auth-title">{{ 'auth.signInTitle' | translate }}</h1>
+        <p class="auth-subtitle">{{ 'auth.signInSubtitle' | translate }}</p>
       </div>
 
       <!-- #loginForm="ngForm" grabs the NgForm directive Angular auto-attaches to
@@ -13,7 +13,7 @@
            novalidate turns OFF the browser's own bubbles so Angular owns validation. -->
       <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" novalidate>
         <mat-form-field appearance="outline" class="full-width-field">
-          <mat-label>Email address</mat-label>
+          <mat-label>{{ 'auth.email' | translate }}</mat-label>
           <mat-icon matPrefix>email</mat-icon>
           <!-- name="email" is REQUIRED: NgForm registers controls by their name
                attribute. Forget it and you get a runtime error.
@@ -32,12 +32,12 @@
           <!-- `&& touched` is the whole trick: without it every field screams
                "required" the instant the page loads, before the user typed anything. -->
           @if (emailCtrl.invalid && emailCtrl.touched) {
-            <mat-error>Email is required in valid format</mat-error>
+            <mat-error>{{ 'auth.emailInvalid' | translate }}</mat-error>
           }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width-field">
-          <mat-label>Password</mat-label>
+          <mat-label>{{ 'auth.password' | translate }}</mat-label>
           <mat-icon matPrefix>lock</mat-icon>
           <!-- Gotcha: the message below promises "Min. 8 chars" but only `required`
                is applied here. Add minlength="8" or the rule is never enforced. -->
@@ -50,7 +50,7 @@
             required
           />
           @if (passwordCtrl.invalid && passwordCtrl.touched) {
-            <mat-error>Password is required (Min. 8 chars)</mat-error>
+            <mat-error>{{ 'auth.passwordRequired' | translate }}</mat-error>
           }
         </mat-form-field>
 
@@ -63,13 +63,13 @@
           type="submit"
           [disabled]="loginForm.invalid"
         >
-          Sign In
+          {{ 'auth.signIn' | translate }}
         </button>
       </form>
 
       <div class="auth-footer">
-        Don't have an account?
-        <a routerLink="/register">Register</a>
+        {{ 'auth.noAccount' | translate }}
+        <a routerLink="/register">{{ 'auth.register' | translate }}</a>
       </div>
     </mat-card-content>
   </mat-card>

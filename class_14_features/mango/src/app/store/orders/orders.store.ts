@@ -14,6 +14,7 @@ import { withDevtools } from '@ngrx-toolkit/core';
 import { catchError, mergeMap, of, pipe, switchMap, tap } from 'rxjs';
 import { NotificationService } from '../../shared/services/notification.service';
 import { OrderService } from '../../shared/services/order.service';
+import { TranslateService } from '@ngx-translate/core';
 
 type OrdersState = {
   loading: boolean;
@@ -43,6 +44,7 @@ export const OrdersStore = signalStore(
       store,
       orderService = inject(OrderService),
       notificationService = inject(NotificationService),
+      translate = inject(TranslateService),
     ) => {
       const loadMyOrders = rxMethod<void>(
         pipe(
@@ -76,14 +78,14 @@ export const OrdersStore = signalStore(
             switchMap((orderId) =>
               orderService.cancelOrder(orderId).pipe(
                 tap(() => {
-                  notificationService.showSuccess('Order canceled successfully.');
+                  notificationService.showSuccess(translate.instant('orders.cancelSuccess'));
                 }),
                 // Swallowing the error with of(null) keeps the rxMethod ALIVE. Let the error
                 // escape instead and the whole pipe completes - the next click does nothing.
                 catchError((err) => {
                   patchState(store, { loading: false });
                   notificationService.showError(
-                    err.error.message || 'Error while canceling order.',
+                    err.error?.message || translate.instant('orders.cancelError'),
                   );
                   return of(null);
                 }),

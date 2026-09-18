@@ -16,6 +16,8 @@ import { refreshTokenInterceptor } from './shared/interceptors/refresh-token.int
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { LanguageService } from './shared/services/language.service';
+import { MatPaginatorIntl } from '@angular/material/paginator';
+import { TranslatedPaginatorIntl } from './shared/services/translated-paginator-intl.service';
 
 function initLanguage(language: LanguageService) {
   return () => language.init();
@@ -43,6 +45,8 @@ export const appConfig: ApplicationConfig = {
       fallbackLang: 'en',
       lang: 'en',
     }),
+    // Localises the Material paginator's built-in labels ("Items per page", "1 - 10 of 42").
+    { provide: MatPaginatorIntl, useClass: TranslatedPaginatorIntl },
     {
       provide: APP_INITIALIZER,
       useFactory: initLanguage,

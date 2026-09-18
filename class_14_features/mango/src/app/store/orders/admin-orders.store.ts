@@ -18,6 +18,7 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { withDevtools } from '@ngrx-toolkit/core';
 import { catchError, mergeMap, of, pipe, switchMap, tap } from 'rxjs';
 import { NotificationService } from '../../shared/services/notification.service';
+import { TranslateService } from '@ngx-translate/core';
 
 // This store is written the "long way" - state, computed, methods and hooks all inline in one
 // signalStore() call. Read it next to product.feature.ts to see the difference: the same
@@ -83,6 +84,7 @@ export const AdminOrdersStore = signalStore(
       store,
       orderService = inject(AdminOrderService),
       notificationService = inject(NotificationService),
+      translate = inject(TranslateService),
     ) => {
       // Same rxMethod shape as the products feature: flag loading, switchMap the HTTP call,
       // write results, and keep catchError on the INNER pipe so an error can't kill the method.
@@ -111,11 +113,11 @@ export const AdminOrdersStore = signalStore(
           tap(() => patchState(store, { loading: true })),
           switchMap(({ order, newStatus }) =>
             orderService.updateStatus(order, newStatus).pipe(
-              tap(() => notificationService.showSuccess('Order status successfully updated!')),
+              tap(() => notificationService.showSuccess(translate.instant('admin.statusUpdated'))),
               catchError((error) => {
                 patchState(store, { loading: false });
                 notificationService.showError(
-                  error.error.message || 'Error while updating order status.',
+                  error.error?.message || translate.instant('admin.statusUpdateError'),
                 );
                 return of(null);
               }),

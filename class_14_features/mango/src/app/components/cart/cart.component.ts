@@ -5,12 +5,20 @@ import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { CurrencyPipe } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-cart',
   templateUrl: './cart.component.html',
   styleUrl: './cart.component.css',
-  imports: [MatIconModule, RouterLink, MatButtonModule, MatTableModule, CurrencyPipe],
+  imports: [
+    TranslatePipe,
+    MatIconModule,
+    RouterLink,
+    MatButtonModule,
+    MatTableModule,
+    CurrencyPipe,
+  ],
 })
 export class CartComponent {
   // Public (not private) because the template reads cartService.items/total directly -

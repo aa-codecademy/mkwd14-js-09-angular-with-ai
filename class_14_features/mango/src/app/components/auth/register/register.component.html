@@ -3,8 +3,8 @@
     <mat-card-content class="card-content-padded">
       <div class="auth-header">
         <mat-icon>spa</mat-icon>
-        <h1 class="auth-title">Create Account</h1>
-        <p class="auth-subtitle">Join Mango Store today</p>
+        <h1 class="auth-title">{{ 'auth.registerTitle' | translate }}</h1>
+        <p class="auth-subtitle">{{ 'auth.registerSubtitle' | translate }}</p>
       </div>
 
       <!-- Same template-driven setup as the login form: NgForm exposed as
@@ -12,7 +12,7 @@
       <form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)" novalidate>
         <div class="name-grid">
           <mat-form-field appearance="outline">
-            <mat-label>First Name</mat-label>
+            <mat-label>{{ 'auth.firstName' | translate }}</mat-label>
             <!-- minlength as an attribute = Angular's MinLengthValidator.
                  Careful: minlength only kicks in once there's a value, which is
                  exactly why you still need `required` next to it. -->
@@ -25,12 +25,12 @@
               minlength="2"
             />
             @if (firstNameCtrl.invalid && firstNameCtrl.touched) {
-              <mat-error>First name is required (Min 2 chars)</mat-error>
+              <mat-error>{{ 'auth.firstNameInvalid' | translate }}</mat-error>
             }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Last Name</mat-label>
+            <mat-label>{{ 'auth.lastName' | translate }}</mat-label>
             <input
               matInput
               name="lastName"
@@ -40,13 +40,13 @@
               minlength="2"
             />
             @if (lastNameCtrl.invalid && lastNameCtrl.touched) {
-              <mat-error>Last name is required (Min 2 chars)</mat-error>
+              <mat-error>{{ 'auth.lastNameInvalid' | translate }}</mat-error>
             }
           </mat-form-field>
         </div>
 
         <mat-form-field appearance="outline" class="full-width-field">
-          <mat-label>Email address</mat-label>
+          <mat-label>{{ 'auth.email' | translate }}</mat-label>
           <mat-icon matPrefix>email</mat-icon>
           <input
             type="email"
@@ -58,12 +58,12 @@
             email
           />
           @if (emailCtrl.invalid && emailCtrl.touched) {
-            <mat-error>Email is required in valid format</mat-error>
+            <mat-error>{{ 'auth.emailInvalid' | translate }}</mat-error>
           }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width-field">
-          <mat-label>Password</mat-label>
+          <mat-label>{{ 'auth.password' | translate }}</mat-label>
           <mat-icon matPrefix>lock</mat-icon>
           <input
             type="password"
@@ -74,12 +74,12 @@
             required
           />
           @if (passwordCtrl.invalid && passwordCtrl.touched) {
-            <mat-error>Password is required (Min. 8 chars)</mat-error>
+            <mat-error>{{ 'auth.passwordRequired' | translate }}</mat-error>
           }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width-field">
-          <mat-label>Confirm password</mat-label>
+          <mat-label>{{ 'auth.confirmPassword' | translate }}</mat-label>
           <mat-icon matPrefix>lock_reset</mat-icon>
           <!-- appMatchPassword is our own directive; [matchTarget] feeds it the
                password to compare against. Note there is NO `required` here -
@@ -101,7 +101,7 @@
             confirmPasswordCtrl.touched &&
             confirmPasswordCtrl.errors?.['passwordMissMatch']
           ) {
-            <mat-error>Passwords must match</mat-error>
+            <mat-error>{{ 'auth.passwordsMustMatch' | translate }}</mat-error>
           }
         </mat-form-field>
 
@@ -114,13 +114,13 @@
           type="submit"
           [disabled]="registerForm.invalid"
         >
-          Create account
+          {{ 'auth.createAccount' | translate }}
         </button>
       </form>
 
       <div class="auth-footer">
-        Already have an account?
-        <a routerLink="/login">Sign in</a>
+        {{ 'auth.haveAccount' | translate }}
+        <a routerLink="/login">{{ 'auth.signInLink' | translate }}</a>
       </div>
     </mat-card-content>
   </mat-card>

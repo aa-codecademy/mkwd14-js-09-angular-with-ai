@@ -25,7 +25,7 @@
         routerLink="/admin"
         class="navbar-link"
         routerLinkActive="active-link"
-        >Admin</a
+        >{{ 'nav.admin' | translate }}</a
       >
     </nav>
 
@@ -39,7 +39,7 @@
       <a
         routerLink="/cart"
         class="navbar-icon-link navbar-link"
-        aria-label="Cart"
+        [attr.aria-label]="'nav.cart' | translate"
         mat-icon-button
         [matBadge]="cartService.itemsCount()"
         [matBadgeHidden]="cartService.itemsCount() === 0"
@@ -47,9 +47,13 @@
       >
         <mat-icon>shopping_cart</mat-icon>
       </a>
+      <!-- matMenuTriggerFor points at the #languageMenu template variable below. -->
+      <!-- Material only renders the menu's contents when it opens, not on page load. -->
       <button mat-button [matMenuTriggerFor]="languageMenu">
         <mat-icon>language</mat-icon> {{ languageService.currentLang() | uppercase }}
       </button>
+      <!-- Looping over languageService.available means adding a third language is a -->
+      <!-- one-line change in the service, not new markup here. -->
       <mat-menu #languageMenu="matMenu">
         @for (lang of languageService.available; track lang) {
           <button mat-menu-item (click)="languageService.use(lang)">
@@ -66,7 +70,7 @@
           class="navbar-link nav-link-with-icon"
         >
           <mat-icon>receipt_long</mat-icon>
-          <span>My Orders</span>
+          <span>{{ 'nav.myOrders' | translate }}</span>
         </a>
         <a
           routerLink="/account"
@@ -81,13 +85,15 @@
         <button
           mat-icon-button
           class="navbar-link navbar-icon-button"
-          title="Sign out"
+          [title]="'nav.signOut' | translate"
           (click)="store.logout()"
         >
           <mat-icon>logout</mat-icon>
         </button>
       } @else {
-        <a mat-stroked-button routerLink="/login" class="navbar-login">Login</a>
+        <a mat-stroked-button routerLink="/login" class="navbar-login">{{
+          'nav.login' | translate
+        }}</a>
       }
     </div>
   </div>

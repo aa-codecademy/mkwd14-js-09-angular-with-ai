@@ -1,10 +1,4 @@
-import {
-  Component,
-  computed,
-  inject,
-  signal,
-  type OnInit,
-} from '@angular/core';
+import { Component, computed, inject, signal, type OnInit } from '@angular/core';
 import {
   FormBuilder,
   ReactiveFormsModule,
@@ -29,10 +23,13 @@ import type { Category } from '../../../core/models/category.model';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ProductService } from '../../../shared/services/product.service';
+import { TranslatePipe } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-product-form',
   imports: [
+    TranslatePipe,
     // ReactiveFormsModule is what unlocks [formGroup], formControlName, formArrayName in the template.
     // Forget it and Angular throws "Can't bind to 'formGroup'" - it is NOT imported globally.
     ReactiveFormsModule,
@@ -50,6 +47,7 @@ import { ProductService } from '../../../shared/services/product.service';
   styleUrl: './product-form.component.css',
 })
 export class ProductFormComponent implements OnInit {
+  private readonly translate = inject(TranslateService);
   // inject() is the modern alternative to constructor injection - shorter, and it works
   // in field initializers (which is exactly why `form` below can already use `this.fb`).
   private fb = inject(FormBuilder);
@@ -209,23 +207,25 @@ export class ProductFormComponent implements OnInit {
       this.adminProductService.create(body).subscribe({
         next: (createdProduct) => {
           this.notificationService.showSuccess(
-            `Product ${createdProduct.name} has been successfully created!`,
+            this.translate.instant('productForm.createSuccess', { name: createdProduct.name }),
           );
           // Navigate away only on success - never before the request resolves.
           this.router.navigate(['/admin']);
         },
         // Always handle error, otherwise a failed request becomes an unhandled exception.
-        error: () => this.notificationService.showError('Error while creating the product'),
+        error: () =>
+          this.notificationService.showError(this.translate.instant('productForm.createError')),
       });
     } else {
       this.adminProductService.update(body, this.productId()!).subscribe({
         next: (updatedProduct) => {
           this.notificationService.showSuccess(
-            `Product ${updatedProduct.name} has been updated successfully!`,
+            this.translate.instant('productForm.updateSuccess', { name: updatedProduct.name }),
           );
           this.router.navigate(['/admin']);
         },
-        error: () => this.notificationService.showError('Error while updating the product'),
+        error: () =>
+          this.notificationService.showError(this.translate.instant('productForm.updateError')),
       });
     }
   }

@@ -1,18 +1,20 @@
 <div class="container orders-admin-container">
   <div class="orders-admin-header">
     <div>
-      <h1 class="page-title">Orders</h1>
-      <p class="page-subtitle">Every order placed in the shop.</p>
+      <h1 class="page-title">{{ 'admin.ordersTitle' | translate }}</h1>
+      <p class="page-subtitle">{{ 'admin.ordersSubtitle' | translate }}</p>
     </div>
-    <a mat-stroked-button routerLink="/admin"><mat-icon>inventory_2</mat-icon>Products</a>
+    <a mat-stroked-button routerLink="/admin"
+      ><mat-icon>inventory_2</mat-icon>{{ 'admin.products' | translate }}</a
+    >
   </div>
 
   <mat-form-field appearance="outline">
-    <mat-label>Status</mat-label>
+    <mat-label>{{ 'admin.status' | translate }}</mat-label>
     <mat-select [value]="store.status()" (valueChange)="store.setStatusFilter($event)">
-      <mat-option [value]="''">All statuses</mat-option>
+      <mat-option [value]="''">{{ 'admin.allStatuses' | translate }}</mat-option>
       @for (status of store.statuses(); track status) {
-        <mat-option [value]="status">{{ status }}</mat-option>
+        <mat-option [value]="status">{{ 'status.' + status | translate }}</mat-option>
       }
     </mat-select>
   </mat-form-field>
@@ -43,17 +45,21 @@
       </ng-container>
 
       <ng-container matColumnDef="id">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Order</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>
+          {{ 'admin.colOrder' | translate }}
+        </th>
         <td mat-cell *matCellDef="let order">#{{ order.id }}</td>
       </ng-container>
 
       <ng-container matColumnDef="createdAt">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Placed</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>
+          {{ 'admin.colPlaced' | translate }}
+        </th>
         <td mat-cell *matCellDef="let order">{{ order.createdAt | date: 'medium' }}</td>
       </ng-container>
 
       <ng-container matColumnDef="customer">
-        <th mat-header-cell *matHeaderCellDef>Customer</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'admin.colCustomer' | translate }}</th>
         <td mat-cell *matCellDef="let order">
           <span class="cell-strong"> {{ order.user.firstName }} {{ order.user.lastName }} </span>
           <span class="cell-muted">{{ order.user.email }}</span>
@@ -61,37 +67,39 @@
       </ng-container>
 
       <ng-container matColumnDef="shipTo">
-        <th mat-header-cell *matHeaderCellDef>Ship to</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'admin.colShipTo' | translate }}</th>
         <td mat-cell *matCellDef="let order">
           {{ order.shippingCity }}, {{ order.shippingCountry }}
         </td>
       </ng-container>
 
       <ng-container matColumnDef="items">
-        <th mat-header-cell *matHeaderCellDef>Items</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'admin.colItems' | translate }}</th>
         <td mat-cell *matCellDef="let order">
           {{ itemCount(order.items) }}
         </td>
       </ng-container>
 
       <ng-container matColumnDef="total">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Total</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>
+          {{ 'admin.colTotal' | translate }}
+        </th>
         <td mat-cell *matCellDef="let order">
           {{ order.total | currency: 'EUR' }}
         </td>
       </ng-container>
 
       <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'admin.status' | translate }}</th>
         <td mat-cell *matCellDef="let order">
           <span class="badge" [class]="'badge-' + order.status.toLowerCase()">
-            {{ order.status }}
+            {{ 'status.' + order.status | translate }}
           </span>
         </td>
       </ng-container>
 
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>Decision</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'admin.colDecision' | translate }}</th>
         <td mat-cell *matCellDef="let order" class="actions-cell">
           @if (order.status === 'PENDING') {
             <button
@@ -100,7 +108,7 @@
               type="button"
               (click)="store.updateStatus({ order, newStatus: 'SHIPPED' })"
             >
-              Accept &amp; ship
+              {{ 'admin.acceptAndShip' | translate }}
             </button>
             <!-- Call a component method instead of the store directly, so the confirmation
                  step can sit in between. Templates should ask, not decide. -->
@@ -111,7 +119,7 @@
               class="cancel-red-button"
               (click)="handleCancel(order)"
             >
-              Cancel
+              {{ 'admin.cancel' | translate }}
             </button>
           } @else if (order.status === 'SHIPPED') {
             <button
@@ -120,7 +128,7 @@
               type="button"
               (click)="store.updateStatus({ order, newStatus: 'DELIVERED' })"
             >
-              Mark as delivered
+              {{ 'admin.markDelivered' | translate }}
             </button>
           }
         </td>
@@ -131,7 +139,7 @@
           @if (store.expandedId() === order.id) {
             <div class="detail-panel">
               <div class="detail-address">
-                <strong>Shipping</strong>
+                <strong>{{ 'admin.shipping' | translate }}</strong>
                 <div>{{ order.shippingFirstName }} {{ order.shippingLastName }}</div>
                 <div>{{ order.shippingStreet }}</div>
                 <div>

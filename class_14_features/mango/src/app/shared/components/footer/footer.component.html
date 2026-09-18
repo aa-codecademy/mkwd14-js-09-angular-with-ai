@@ -1,17 +1,17 @@
 <footer class="site-footer">
   <div class="container footer-grid">
     <div>
-      <h3 class="footer-heading">Mango Store</h3>
-      <p class="footer-text">Premium tech products at great prices.</p>
+      <h3 class="footer-heading">{{ 'footer.brand' | translate }}</h3>
+      <p class="footer-text">{{ 'footer.tagline' | translate }}</p>
     </div>
     <div>
-      <h4 class="footer-heading">Quick Links</h4>
+      <h4 class="footer-heading">{{ 'footer.quickLinks' | translate }}</h4>
       <div class="footer-links">
-        <a routerLink="/" class="footer-link">Home</a>
-        <a routerLink="/products" class="footer-link">Products</a>
-        <a routerLink="/cart" class="footer-link">Cart</a>
+        <a routerLink="/" class="footer-link">{{ 'footer.home' | translate }}</a>
+        <a routerLink="/products" class="footer-link">{{ 'footer.products' | translate }}</a>
+        <a routerLink="/cart" class="footer-link">{{ 'footer.cart' | translate }}</a>
       </div>
     </div>
   </div>
-  <div class="footer-bottom">© 2026 Mango Store. Built with Angular 22.</div>
+  <div class="footer-bottom">{{ 'footer.copyright' | translate }}</div>
 </footer>

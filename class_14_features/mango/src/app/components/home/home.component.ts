@@ -4,13 +4,14 @@ import { MatAnchor } from '@angular/material/button';
 import { ProductService } from '../../shared/services/product.service';
 import type { Product } from '../../core/models/product.model';
 import { ProductCardComponent } from '../product-card/product-card.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 // This is the component lazy-loaded for the '' (root) route in app.routes.ts.
 @Component({
   selector: 'app-home',
   // Must import CardShellComponent here to use <app-card-shell> in the template - standalone
   // components don't automatically "see" each other, each declares its own dependencies.
-  imports: [RouterLink, MatAnchor, ProductCardComponent],
+  imports: [TranslatePipe, RouterLink, MatAnchor, ProductCardComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })

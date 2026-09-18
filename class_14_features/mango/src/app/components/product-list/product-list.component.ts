@@ -9,11 +9,13 @@ import { MatChipsModule } from '@angular/material/chips';
 import { ProductsStore } from '../../store/products/products.store';
 import { MatSelectModule } from '@angular/material/select';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
-import { ProductFiltersComponent } from "../../shared/components/product-filters/product-filters.component";
+import { ProductFiltersComponent } from '../../shared/components/product-filters/product-filters.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-product-list',
   imports: [
+    TranslatePipe,
     ProductCardComponent,
     PaginationComponent,
     MatFormFieldModule,
@@ -23,8 +25,8 @@ import { ProductFiltersComponent } from "../../shared/components/product-filters
     MatButtonModule,
     MatChipsModule,
     MatSelectModule,
-    ProductFiltersComponent
-],
+    ProductFiltersComponent,
+  ],
   templateUrl: './product-list.component.html',
   styleUrl: './product-list.component.css',
 })

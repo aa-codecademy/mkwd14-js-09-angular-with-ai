@@ -11,10 +11,13 @@ import type { Register } from '../../../core/models/auth.model';
 import { NotificationService } from '../../../shared/services/notification.service';
 import { MatchPasswordDirective } from '../../../shared/directives/match-password.directive';
 import { AuthStore } from '../../../store/auth/auth.store';
+import { TranslatePipe } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-register',
   imports: [
+    TranslatePipe,
     MatCardModule,
     MatIconModule,
     FormsModule,
@@ -32,6 +35,7 @@ import { AuthStore } from '../../../store/auth/auth.store';
   styleUrl: './register.component.css',
 })
 export class RegisterComponent {
+  private readonly translate = inject(TranslateService);
   // Register goes through the store too, for consistency - even though it changes no
   // state, components shouldn't need to know which calls happen to be stateful.
   private store = inject(AuthStore);
@@ -68,12 +72,16 @@ export class RegisterComponent {
       // that's why we send them to /login instead of straight to the home page.
       next: (res) => {
         this.notificationService.showSuccess(
-          `User: ${res.user.firstName} ${res.user.lastName} has been successfully registered!`,
+          this.translate.instant('auth.registerSuccess', {
+            name: `${res.user.firstName} ${res.user.lastName}`,
+          }),
         );
         this.router.navigate(['/login']);
       },
       error: (error) =>
-        this.notificationService.showError(error.error.message || 'Error while registering'),
+        this.notificationService.showError(
+          error.error?.message || this.translate.instant('auth.registerError'),
+        ),
     });
   }
 }

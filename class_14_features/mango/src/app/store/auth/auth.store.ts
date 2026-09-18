@@ -1,6 +1,6 @@
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import type { Login, Register, User } from '../../core/models/auth.model';
-import { computed, inject } from '@angular/core';
+import { computed, inject, Injector } from '@angular/core';
 import { AuthService } from '../../shared/services/auth.service';
 import { withTokenStorage } from '../features/token-storage.feature';
 import { catchError, of, tap } from 'rxjs';
@@ -9,6 +9,7 @@ import { jwtDecode } from 'jwt-decode';
 import type { TokenPayload } from '../../core/types/token-payload.type';
 import type { ResetPassword } from '../../core/types/auth-response.type';
 import { NotificationService } from '../../shared/services/notification.service';
+import { TranslateService } from '@ngx-translate/core';
 
 type AuthState = {
   // Only the user. The tokens are NOT declared here - withTokenStorage() already
@@ -54,6 +55,7 @@ export const AuthStore = signalStore(
       store,
       authService = inject(AuthService),
       notificationService = inject(NotificationService),
+      injector = inject(Injector),
       router = inject(Router),
     ) => ({
       login(body: Login) {
@@ -77,26 +79,34 @@ export const AuthStore = signalStore(
           .refresh(store.refreshToken()!)
           .pipe(tap((res) => store.setTokens(res.accessToken, res.refreshToken)));
       },
+      // Stores a translation KEY on failure instead of an English sentence, so the message
+      // re-renders in the new language when the user flips the switcher.
       resetPassword(body: ResetPassword) {
         return authService.resetPassword(body).pipe(
           tap(() => {
-            notificationService.showSuccess('Password reset was successful. Please login again.');
+            notificationService.showSuccess(
+              // instant() returns the string synchronously (no observable) - safe here only
+              // because the language file is already loaded by APP_INITIALIZER at startup.
+              injector.get(TranslateService).instant('resetPassword.success'),
+            );
             this.logout();
           }),
           catchError((error) => {
             if (error.error.status === 401) {
               patchState(store, {
-                passwordError: 'Current password is incorrect',
+                passwordError: 'resetPassword.incorrectCurrent',
               });
             } else {
               patchState(store, {
-                passwordError: 'Issue while resetting your password',
+                passwordError: 'resetPassword.error',
               });
             }
             return of(null);
           }),
         );
       },
+      // Called from (ngModelChange) so a stale "wrong password" message disappears as soon
+      // as the user edits the field.
       clearPasswordError() {
         patchState(store, { passwordError: '' });
       },

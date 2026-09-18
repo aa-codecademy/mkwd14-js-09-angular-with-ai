@@ -12,9 +12,12 @@ import { MatSelectModule } from '@angular/material/select';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import type { SortDirection } from '../../../core/types/sort-direction.type';
 import { ConfirmationService } from '../../../shared/services/confimation.service';
+import { TranslatePipe } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   imports: [
+    TranslatePipe,
     RouterLink,
     MatIconModule,
     MatAnchor,
@@ -33,6 +36,7 @@ import { ConfirmationService } from '../../../shared/services/confimation.servic
   templateUrl: './orders.component.html',
 })
 export class OrdersComponent {
+  private readonly translate = inject(TranslateService);
   // Injecting the store is all the setup this page needs: the store's onInit already kicked
   // off the fetch, so there's no ngOnInit and nothing to unsubscribe from here.
   protected readonly store = inject(AdminOrdersStore);
@@ -56,9 +60,9 @@ export class OrdersComponent {
   // all the more reason to make the admin click twice.
   async handleCancel(order: Order) {
     const confirmation = await this.confirmationService.confirm(
-      `Are you sure you want to cancel order #${order.id}`,
-      `This action is irreversible`,
-      'Cancel Order',
+      this.translate.instant('admin.confirmCancelTitle', { id: order.id }),
+      this.translate.instant('admin.confirmCancelMessage'),
+      this.translate.instant('admin.confirmCancelLabel'),
     );
 
     // Say no and we simply never reach the store call - the order is untouched.

@@ -1,6 +1,6 @@
 <div class="container product-list-page">
   <div class="page-header">
-    <h1>All Products</h1>
+    <h1>{{ 'productList.title' | translate }}</h1>
   </div>
 
   <app-product-filters
@@ -23,10 +23,12 @@
            you don't need a separate @if with a .length check. -->
     } @empty {
       <div class="empty-state empty-state-full-width">
-        <p>No products founds.</p>
+        <p>{{ 'productList.empty' | translate }}</p>
         <!-- Only offer "clear filters" if filters are actually the reason it's empty. -->
         @if (store.hasActiveFilters()) {
-          <button mat-stroked-button (click)="store.clearFilters()">Clear filters</button>
+          <button mat-stroked-button (click)="store.clearFilters()">
+            {{ 'productList.clearFilters' | translate }}
+          </button>
         }
       </div>
     }

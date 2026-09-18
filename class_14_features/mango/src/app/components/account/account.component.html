@@ -1,5 +1,5 @@
 <div class="container account-container">
-  <h1 class="account-title">My Account</h1>
+  <h1 class="account-title">{{ 'account.title' | translate }}</h1>
   <!-- `@if (expr; as user)` calls the signal ONCE and aliases the result. Without the alias
        you'd write auth.currentUser()?.email everywhere and need ?. on every access, because
        TypeScript can't prove a function call returns the same non-null value twice. -->
@@ -21,15 +21,15 @@
 
     <div class="account-actions">
       <a mat-flat-button color="primary" routerLink="/orders"
-        ><mat-icon>receipt_long</mat-icon> My Orders</a
+        ><mat-icon>receipt_long</mat-icon> {{ 'account.myOrders' | translate }}</a
       >
       <a mat-stroked-button routerLink="/account/reset-password"
-        ><mat-icon>lock_reset</mat-icon> Reset password</a
+        ><mat-icon>lock_reset</mat-icon> {{ 'account.resetPassword' | translate }}</a
       >
-      <a mat-stroked-button routerLink="/products"> Continue Shopping</a>
+      <a mat-stroked-button routerLink="/products"> {{ 'account.continueShopping' | translate }}</a>
       <button mat-flat-button color="warn" (click)="auth.logout()">
         <mat-icon>logout</mat-icon>
-        Sign Out
+        {{ 'account.signOut' | translate }}
       </button>
     </div>
   }

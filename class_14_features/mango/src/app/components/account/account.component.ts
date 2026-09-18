@@ -4,9 +4,10 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { AuthStore } from '../../store/auth/auth.store';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
-  imports: [MatCardModule, MatButtonModule, MatIconModule, RouterLink],
+  imports: [TranslatePipe, MatCardModule, MatButtonModule, MatIconModule, RouterLink],
   selector: 'app-account',
   styleUrl: './account.component.css',
   templateUrl: './account.component.html',

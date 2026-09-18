@@ -1,9 +1,11 @@
 <div class="container not-found-page">
   <mat-icon class="not-found-icon">sentiment_dissatisfied</mat-icon>
   <h1 class="not-found-code">404</h1>
-  <h2 class="not-found-subtitle">Product Not Found</h2>
+  <h2 class="not-found-subtitle">{{ 'product.notFoundTitle' | translate }}</h2>
   <p class="not-found-text">
-    The product with ID: {{ productId() }} you are looking for does not exist
+    {{ 'product.notFoundText' | translate: { id: productId() } }}
   </p>
-  <a mat-flat-button color="primary" routerLink="/products">Back to Products</a>
+  <a mat-flat-button color="primary" routerLink="/products">{{
+    'product.backToProducts' | translate
+  }}</a>
 </div>

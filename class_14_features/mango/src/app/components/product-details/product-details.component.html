@@ -5,7 +5,7 @@
 <div class="container product-detail-page">
   @if (product()) {
     <a mat-button routerLink="/products" class="back-link"
-      ><mat-icon>arrow_back</mat-icon> Back to Products</a
+      ><mat-icon>arrow_back</mat-icon> {{ 'product.backToProducts' | translate }}</a
     >
     <div class="product-detail-grid">
       <img [src]="product()!.image" alt="" [alt]="product()!.name" class="product-detail-image" />
@@ -21,9 +21,13 @@
         </div>
         <p class="product-description">{{ product()!.description }}</p>
         @if (product()!.stock === 0) {
-          <span class="out-of-stock-badge stock-badge-spacing">Out of Stock</span>
+          <span class="out-of-stock-badge stock-badge-spacing">{{
+            'product.outOfStock' | translate
+          }}</span>
         } @else {
-          <span class="in-stock-badge stock-badge-spacing">In Stock ({{ product()!.stock }})</span>
+          <span class="in-stock-badge stock-badge-spacing">{{
+            'product.inStockCount' | translate: { count: product()!.stock }
+          }}</span>
         }
         <br />
         <button
@@ -33,7 +37,7 @@
           (click)="addToCart()"
         >
           <mat-icon>shopping_cart</mat-icon>
-          Add to Cart
+          {{ 'product.addToCart' | translate }}
         </button>
       </div>
     </div>

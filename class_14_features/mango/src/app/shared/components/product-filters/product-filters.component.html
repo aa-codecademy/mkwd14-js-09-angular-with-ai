@@ -1,6 +1,6 @@
 <div class="filter-row">
   <mat-form-field appearance="outline" class="search-field">
-    <mat-label>Search products</mat-label>
+    <mat-label>{{ 'filters.search' | translate }}</mat-label>
     <mat-icon matPrefix>search</mat-icon>
     <!-- One-way [ngModel] + (ngModelChange) instead of two-way [(ngModel)]. Two-way binding
          needs a writable property to assign into, and store signals are read-only from out
@@ -8,37 +8,42 @@
     <input
       matInput
       type="search"
-      placeholder="Search..."
+      [placeholder]="'filters.searchPlaceholder' | translate"
       [ngModel]="search()"
       (ngModelChange)="searchChange.emit($event)"
     />
     <!-- @if only creates the clear button when there's something to clear - it's removed
          from the DOM entirely, not just hidden with CSS. -->
     @if (search()) {
-      <button matSuffix aria-label="Clear search" mat-icon-button (click)="searchChange.emit('')">
+      <button
+        matSuffix
+        [attr.aria-label]="'filters.clearSearch' | translate"
+        mat-icon-button
+        (click)="searchChange.emit('')"
+      >
         <mat-icon>close</mat-icon>
       </button>
     }
   </mat-form-field>
 
   <mat-form-field appearance="outline">
-    <mat-label>Sort by</mat-label>
+    <mat-label>{{ 'filters.sortBy' | translate }}</mat-label>
     <!-- Changing this calls one setter and nothing else. The store's onInit already watches
          the `query` signal, so the refetch happens on its own. -->
     <mat-select [ngModel]="sortBy()" (ngModelChange)="sortByChange.emit($event)">
-      <mat-option value="id">Featured</mat-option>
-      <mat-option value="price">Price</mat-option>
-      <mat-option value="name">Name</mat-option>
-      <mat-option value="rating">Rating</mat-option>
-      <mat-option value="createdAt">Newest / Oldest</mat-option>
+      <mat-option value="id">{{ 'filters.featured' | translate }}</mat-option>
+      <mat-option value="price">{{ 'filters.price' | translate }}</mat-option>
+      <mat-option value="name">{{ 'filters.name' | translate }}</mat-option>
+      <mat-option value="rating">{{ 'filters.rating' | translate }}</mat-option>
+      <mat-option value="createdAt">{{ 'filters.newestOldest' | translate }}</mat-option>
     </mat-select>
   </mat-form-field>
 
   <mat-form-field appearance="outline">
-    <mat-label>Sort direction</mat-label>
+    <mat-label>{{ 'filters.sortDirection' | translate }}</mat-label>
     <mat-select [ngModel]="sortDir()" (ngModelChange)="sortDirChange.emit($event)">
-      <mat-option value="desc">Descending</mat-option>
-      <mat-option value="asc">Ascending</mat-option>
+      <mat-option value="desc">{{ 'filters.descending' | translate }}</mat-option>
+      <mat-option value="asc">{{ 'filters.ascending' | translate }}</mat-option>
     </mat-select>
   </mat-form-field>
 
@@ -46,9 +51,9 @@
     <mat-chip-listbox>
       <!-- `null` means "no category filter", so the All chip is selected whenever categoryId
            is empty. -->
-      <mat-chip-option [selected]="!categoryId()" (click)="categoryChange.emit(null)"
-        >All</mat-chip-option
-      >
+      <mat-chip-option [selected]="!categoryId()" (click)="categoryChange.emit(null)">{{
+        'filters.all' | translate
+      }}</mat-chip-option>
       <!-- `track category.id` gives Angular a stable identity per row so it moves existing DOM
            nodes instead of destroying and rebuilding them. Never track by $index for data that
            can be reordered or filtered. -->
@@ -63,9 +68,9 @@
     </mat-chip-listbox>
   } @else {
     <mat-form-field appearance="outline" class="filter-field">
-      <mat-label>Category</mat-label>
+      <mat-label>{{ 'filters.category' | translate }}</mat-label>
       <mat-select [ngModel]="categoryId()" (ngModelChange)="categoryChange.emit($event)">
-        <mat-option [value]="null">All categories</mat-option>
+        <mat-option [value]="null">{{ 'filters.allCategories' | translate }}</mat-option>
         @for (category of categories(); track category.id) {
           <mat-option [value]="category.id">{{ category.name }}</mat-option>
         }

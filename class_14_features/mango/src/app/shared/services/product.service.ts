@@ -1,10 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import type { Product } from '../../core/models/product.model';
 import { map, type Observable } from 'rxjs';
-import type {
-  ProductQuery,
-  PaginatedProducts,
-} from '../../store/features/product.feature';
+import type { ProductQuery, PaginatedProducts } from '../../store/features/product.feature';
 import { API_URL } from '../../tokens/api-url.token';
 import { HttpClient, HttpParams } from '@angular/common/http';
 

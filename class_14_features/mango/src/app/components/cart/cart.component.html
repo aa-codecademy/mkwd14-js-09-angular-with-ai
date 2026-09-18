@@ -1,41 +1,39 @@
 <div class="container cart-page">
-  <h1 class="page-title">Your Cart</h1>
+  <h1 class="page-title">{{ 'cart.title' | translate }}</h1>
 
   <!-- Reads cartService.items directly in the template rather than an @Input - since CartService -->
   <!-- is a singleton, the cart page just asks it for the current state instead of a parent passing it down. -->
   @if (!cartService.items().length) {
     <div class="empty-state">
       <mat-icon>shopping_cart</mat-icon>
-      <h2>Your cart is empty</h2>
-      <a mat-flat-button color="primary" routerLink="/products" class="shop-now-link">Shop Now</a>
+      <h2>{{ 'cart.empty' | translate }}</h2>
+      <a mat-flat-button color="primary" routerLink="/products" class="shop-now-link">{{
+        'cart.shopNow' | translate
+      }}</a>
     </div>
   } @else {
     <!-- mat-table renders rows straight from [dataSource] - no manual *ngFor loop needed, Material -->
     <!-- handles iterating cartService.items and matching each column def below to a cell template. -->
     <table mat-table [dataSource]="cartService.items()" class="cart-table">
       <ng-container matColumnDef="product">
-        <th mat-header-cell *matHeaderCellDef>Product</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'cart.product' | translate }}</th>
         <td mat-cell *matCellDef="let item">
           <div class="cart-product-cell">
-            <img
-              [src]="item.product.image"
-              [alt]="item.product.name + 'image'"
-              class="cart-product-image"
-            />
+            <img [src]="item.product.image" [alt]="item.product.name" class="cart-product-image" />
             <span class="cart-product-name">{{ item.product.name }}</span>
           </div>
         </td>
       </ng-container>
 
       <ng-container matColumnDef="price">
-        <th mat-header-cell *matHeaderCellDef>Price</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'cart.price' | translate }}</th>
         <td mat-cell *matCellDef="let item">
           {{ item.product.price | currency: 'EUR' }}
         </td>
       </ng-container>
 
       <ng-container matColumnDef="quantity">
-        <th mat-header-cell *matHeaderCellDef>Quantity</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'cart.quantity' | translate }}</th>
         <td mat-cell *matCellDef="let item">
           <div class="cart-quantity-controls">
             <!-- Calls the service method directly from the template - simple enough here that a -->
@@ -58,7 +56,7 @@
       </ng-container>
 
       <ng-container matColumnDef="subtotal">
-        <th mat-header-cell *matHeaderCellDef>Subtotal</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'cart.subtotal' | translate }}</th>
         <td mat-cell *matCellDef="let item">
           {{ item.product.price * item.quantity | currency: 'EUR' }}
         </td>
@@ -79,11 +77,15 @@
     </table>
 
     <div class="card-summary">
-      <div class="cart-total">Total: {{ cartService.total() | currency: 'EUR' }}</div>
+      <div class="cart-total">
+        {{ 'cart.total' | translate: { total: cartService.total() | currency: 'EUR' } }}
+      </div>
       <button mat-stroked-button class="clear-cart-btn" (click)="cartService.clear()">
-        Clear Cart
+        {{ 'cart.clear' | translate }}
       </button>
-      <a mat-flat-button color="primary" routerLink="/checkout">Checkout</a>
+      <a mat-flat-button color="primary" routerLink="/checkout">{{
+        'cart.checkout' | translate
+      }}</a>
     </div>
   }
 </div>

@@ -6,12 +6,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { CartService } from '../../shared/services/cart.service';
 import { RouterLink } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-product-card',
   // Each Material piece (card, image, actions, icon, button) is imported individually rather than
   // one big module - standalone Angular Material lets you import just the directives you render.
   imports: [
+    TranslatePipe,
     MatCard,
     MatCardImage,
     MatCardContent,

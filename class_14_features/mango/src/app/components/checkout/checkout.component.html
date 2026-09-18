@@ -1,12 +1,12 @@
 <div class="container checkout-container">
-  <h1 class="checkout-title">Checkout</h1>
+  <h1 class="checkout-title">{{ 'checkout.title' | translate }}</h1>
 
   <!-- linear stepper - each step must be completed/valid before moving to the next -->
   <mat-stepper [linear]="true" #stepper>
     <!-- [stepControl]="addressForm" wires this step's "Next" button to the FormGroup's
          validity - it's disabled until addressForm.valid is true. This is how reactive
          forms integrate cleanly with UI components outside plain HTML forms. -->
-    <mat-step [stepControl]="addressForm" label="Shipping Address">
+    <mat-step [stepControl]="addressForm" [label]="'checkout.shippingAddress' | translate">
       <form [formGroup]="addressForm">
         <div class="name-fields-grid input-margin-bottom">
           <!-- mat-form-field + matInput is Angular Material's wrapper around a native input -
@@ -17,44 +17,44 @@
                is you can't tell WHICH validator failed - use @if + errors?.['...']
                when a field has several rules and needs different messages. -->
           <mat-form-field appearance="outline">
-            <mat-label>First name</mat-label>
+            <mat-label>{{ 'checkout.firstName' | translate }}</mat-label>
             <input type="text" matInput formControlName="firstName" />
-            <mat-error>First name is required</mat-error>
+            <mat-error>{{ 'checkout.firstNameRequired' | translate }}</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Last name</mat-label>
+            <mat-label>{{ 'checkout.lastName' | translate }}</mat-label>
             <input type="text" matInput formControlName="lastName" />
-            <mat-error>Last name is required</mat-error>
+            <mat-error>{{ 'checkout.lastNameRequired' | translate }}</mat-error>
           </mat-form-field>
         </div>
 
         <mat-form-field appearance="outline" class="full-width-field">
-          <mat-label>Street address</mat-label>
+          <mat-label>{{ 'checkout.street' | translate }}</mat-label>
           <input type="text" matInput formControlName="street" />
-          <mat-error>Street address is required</mat-error>
+          <mat-error>{{ 'checkout.streetRequired' | translate }}</mat-error>
         </mat-form-field>
 
         <div class="address-fields-grid input-margin-bottom">
           <mat-form-field appearance="outline">
-            <mat-label>City</mat-label>
+            <mat-label>{{ 'checkout.city' | translate }}</mat-label>
             <input type="text" matInput formControlName="city" />
-            <mat-error>City is required</mat-error>
+            <mat-error>{{ 'checkout.cityRequired' | translate }}</mat-error>
           </mat-form-field>
           <mat-form-field appearance="outline">
-            <mat-label>Postal code</mat-label>
+            <mat-label>{{ 'checkout.postalCode' | translate }}</mat-label>
             <input type="text" matInput formControlName="postalCode" />
-            <mat-error>Code is required</mat-error>
+            <mat-error>{{ 'checkout.postalCodeRequired' | translate }}</mat-error>
           </mat-form-field>
           <mat-form-field appearance="outline">
-            <mat-label>Country</mat-label>
+            <mat-label>{{ 'checkout.country' | translate }}</mat-label>
             <input type="text" matInput formControlName="country" />
-            <mat-error>Country is required</mat-error>
+            <mat-error>{{ 'checkout.countryRequired' | translate }}</mat-error>
           </mat-form-field>
         </div>
 
         <mat-form-field appearance="outline" class="full-width-no-margin-field">
-          <mat-label>Phone</mat-label>
+          <mat-label>{{ 'checkout.phone' | translate }}</mat-label>
           <mat-icon matPrefix>phone</mat-icon>
           <input type="tel" matInput formControlName="phone" />
         </mat-form-field>
@@ -63,13 +63,15 @@
           <!-- matStepperNext advances the stepper. Combined with [linear]="true" and
                [stepControl] above, it stays disabled until addressForm is valid -
                no click handler and no manual index tracking needed. -->
-          <button mat-flat-button color="primary" matStepperNext>Continue to Payment</button>
+          <button mat-flat-button color="primary" matStepperNext>
+            {{ 'checkout.continueToPayment' | translate }}
+          </button>
         </div>
       </form>
     </mat-step>
-    <mat-step label="Confirm Order">
+    <mat-step [label]="'checkout.confirmOrder' | translate">
       <div class="order-summary-wrapper">
-        <h3 class="order-summary-title">Order Summary</h3>
+        <h3 class="order-summary-title">{{ 'checkout.orderSummary' | translate }}</h3>
         @for (item of cartService.items(); track item.product.id) {
           <div class="order-line-item">
             <span>{{ item.product.name }} * {{ item.quantity }}</span>
@@ -80,13 +82,15 @@
           </div>
         }
         <div class="order-actions-row">
-          <span>Total</span>
+          <span>{{ 'checkout.total' | translate }}</span>
           <span>{{ cartService.total() | currency: 'EUR' }}</span>
         </div>
 
         <div class="order-actions-row">
-          <button mat-stroked-button matStepperPrevious>Back</button>
-          <button mat-flat-button color="primary" (click)="placeOrder()">Place Order</button>
+          <button mat-stroked-button matStepperPrevious>{{ 'checkout.back' | translate }}</button>
+          <button mat-flat-button color="primary" (click)="placeOrder()">
+            {{ 'checkout.placeOrder' | translate }}
+          </button>
         </div>
       </div>
     </mat-step>

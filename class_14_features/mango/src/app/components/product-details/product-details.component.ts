@@ -8,10 +8,19 @@ import { MatIcon } from '@angular/material/icon';
 import { CartService } from '../../shared/services/cart.service';
 import { ProductNotFound } from '../../shared/components/product-not-found/product-not-found.component';
 import { map, switchMap } from 'rxjs';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-product-details',
-  imports: [JsonPipe, MatButtonModule, RouterLink, MatIcon, CurrencyPipe, ProductNotFound],
+  imports: [
+    TranslatePipe,
+    JsonPipe,
+    MatButtonModule,
+    RouterLink,
+    MatIcon,
+    CurrencyPipe,
+    ProductNotFound,
+  ],
   templateUrl: './product-details.component.html',
   styleUrl: './product-details.component.css',
 })

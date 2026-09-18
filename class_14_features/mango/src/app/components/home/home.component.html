@@ -1,11 +1,11 @@
 <section class="hero-section">
-  <h1 class="hero-title">Welcome to Mango 🥭</h1>
-  <p class="hero-subtitle">Premium tech products unbeatable prices.</p>
-  <a mat-raised-button color="accent" routerLink="/products">Shop Now</a>
+  <h1 class="hero-title">{{ 'home.heroTitle' | translate }}</h1>
+  <p class="hero-subtitle">{{ 'home.heroSubtitle' | translate }}</p>
+  <a mat-raised-button color="accent" routerLink="/products">{{ 'home.shopNow' | translate }}</a>
 </section>
 
 <section class="container featured-section">
-  <h2>Featured Products</h2>
+  <h2>{{ 'home.featured' | translate }}</h2>
 
   <div class="products-grid">
     @for (product of featuredProducts(); track product.id) {
@@ -14,6 +14,8 @@
   </div>
 
   <div class="view-all-wrapper">
-    <a mat-stroked-button color="primary" routerLink="/products">View All Products</a>
+    <a mat-stroked-button color="primary" routerLink="/products">{{
+      'home.viewAll' | translate
+    }}</a>
   </div>
 </section>

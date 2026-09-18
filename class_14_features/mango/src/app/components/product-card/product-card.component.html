@@ -20,9 +20,9 @@
       <div>
         <!-- @if is the new control-flow syntax replacing *ngIf - conditionally renders this block. -->
         @if (product().stock <= 0) {
-          <span class="out-of-stock-badge">Out of Stock</span>
+          <span class="out-of-stock-badge">{{ 'product.outOfStock' | translate }}</span>
         } @else {
-          <span class="in-stock-badge">In Stock</span>
+          <span class="in-stock-badge">{{ 'product.inStock' | translate }}</span>
         }
       </div>
     </mat-card-content>
@@ -36,7 +36,7 @@
         (click)="addToCart(product(), $event)"
       >
         <mat-icon>shopping_cart</mat-icon>
-        Add to card
+        {{ 'product.addToCart' | translate }}
       </button>
     </mat-card-actions>
   </mat-card>

@@ -12,10 +12,13 @@ import { AuthService } from '../../../shared/services/auth.service';
 import { NotificationService } from '../../../shared/services/notification.service';
 import type { Login } from '../../../core/models/auth.model';
 import { AuthStore } from '../../../store/auth/auth.store';
+import { TranslatePipe } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-login',
   imports: [
+    TranslatePipe,
     MatCardModule,
     MatIconModule,
     FormsModule,
@@ -29,6 +32,7 @@ import { AuthStore } from '../../../store/auth/auth.store';
   styleUrl: './login.component.css',
 })
 export class LoginComponent {
+  private readonly translate = inject(TranslateService);
   // inject() instead of a constructor parameter - same DI, less boilerplate.
   // The component talks to the STORE, not to AuthService directly. That way the token
   // gets saved no matter which screen triggered the login.
@@ -62,13 +66,15 @@ export class LoginComponent {
     // stored the tokens inside tap() by the time this next callback runs.
     this.store.login(body).subscribe({
       next: (user) => {
-        this.notificationService.showSuccess(`You are successfully logged in!`);
+        this.notificationService.showSuccess(this.translate.instant('auth.loginSuccess'));
         this.router.navigate(['/']);
       },
       // Handle the error callback or a failed login throws an unhandled error
       // in the console and the user sees nothing at all.
       error: (error) => {
-        this.notificationService.showError(error.error.message || 'Issue while logging in.');
+        this.notificationService.showError(
+          error.error?.message || this.translate.instant('auth.loginError'),
+        );
       },
     });
   }

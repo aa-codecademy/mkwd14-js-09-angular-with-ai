@@ -11,7 +11,7 @@
     <div class="actions">
       <!-- emit() FIRES the output. Pass the method reference without () anywhere else and
            nothing happens; call it here without emit and you just read the output object. -->
-      <button mat-stroked-button (click)="cancel.emit()">Cancel</button>
+      <button mat-stroked-button (click)="cancel.emit()">{{ 'dialog.cancel' | translate }}</button>
       <button mat-flat-button (click)="confirm.emit()">{{ confirmationLabel() }}</button>
     </div>
   </mat-card>

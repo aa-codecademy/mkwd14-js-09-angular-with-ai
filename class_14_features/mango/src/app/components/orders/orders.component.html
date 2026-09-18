@@ -1,16 +1,16 @@
 <div class="container orders-page">
-  <h1 class="page-title">My Orders</h1>
+  <h1 class="page-title">{{ 'orders.title' | translate }}</h1>
 
   @for (order of store.orders(); track order.id) {
     <mat-card class="order-card">
       <div class="order-header">
         <div>
-          <h2 class="order-number">Order: #{{ order.id }}</h2>
+          <h2 class="order-number">{{ 'orders.orderNumber' | translate: { id: order.id } }}</h2>
           <span class="order-date">{{ order.createdAt | date: 'medium' }}</span>
         </div>
         <div class="order-summary">
           <span class="status-badge" [style.backgroundColor]="statusColor(order.status)">{{
-            order.status
+            'status.' + order.status | translate
           }}</span>
           <span class="order-total">{{ order.total | currency: 'EUR' }}</span>
         </div>
@@ -21,7 +21,9 @@
           <div class="order-line">
             <img [src]="item.product.image" [alt]="item.product.name" class="line-image" />
             <a [routerLink]="['/products', item.product.id]">{{ item.product.name }}</a>
-            <span class="line-quantity">{{ item.quantity }} items</span>
+            <span class="line-quantity">{{
+              'orders.items' | translate: { count: item.quantity }
+            }}</span>
             <!-- item.price is the price PER UNIT, frozen at order time - multiply it here rather
                  than trusting today's product price, which may have changed since. -->
             <span class="line-price">{{ item.price * item.quantity | currency: 'EUR' }}</span>
@@ -48,7 +50,7 @@
             class="cancel-button"
             (click)="handleCancellation(order.id)"
           >
-            <mat-icon>cancel</mat-icon> Cancel Order
+            <mat-icon>cancel</mat-icon> {{ 'orders.cancel' | translate }}
           </button>
         }
       </div>

@@ -5,6 +5,7 @@ import { of, type Observable } from 'rxjs';
 import type { CreateOrder, Order, OrderStatus } from '../../../core/models/order.model';
 import type { SortDirection } from '../../../core/types/sort-direction.type';
 import { NotificationService } from '../notification.service';
+import { TranslateService } from '@ngx-translate/core';
 
 export interface AdminOrderQuery {
   status?: OrderStatus;
@@ -26,6 +27,7 @@ export interface PaginatedOrders {
 export class AdminOrderService {
   private http = inject(HttpClient);
   private notificationService = inject(NotificationService);
+  private translate = inject(TranslateService);
   private apiUrl = inject(API_URL);
 
   // Note the two different types: CreateOrder is what we SEND, Order is what the API RETURNS.
@@ -52,29 +54,29 @@ export class AdminOrderService {
     if (order.status === 'PENDING') {
       if (status !== 'SHIPPED' && status !== 'CANCELLED') {
         this.notificationService.showError(
-          `Invalid status, cannot go from ${order.status} to ${status}`,
+          this.translate.instant('admin.invalidTransition', { from: order.status, to: status }),
         );
         return of();
       }
     } else if (order.status === 'SHIPPED') {
       if (status !== 'DELIVERED') {
         this.notificationService.showError(
-          `Invalid status, cannot go from ${order.status} to ${status}`,
+          this.translate.instant('admin.invalidTransition', { from: order.status, to: status }),
         );
         return of();
       }
     } else if (order.status === 'DELIVERED') {
       this.notificationService.showError(
-        `Invalid status, cannot go from ${order.status} to ${status}`,
+        this.translate.instant('admin.invalidTransition', { from: order.status, to: status }),
       );
       return of();
     } else if (order.status === 'CANCELLED') {
       this.notificationService.showError(
-        `Invalid status, cannot go from ${order.status} to ${status}`,
+        this.translate.instant('admin.invalidTransition', { from: order.status, to: status }),
       );
       return of();
     } else {
-      this.notificationService.showError('Invalid status!');
+      this.notificationService.showError(this.translate.instant('admin.invalidStatus'));
     }
 
     const body = {

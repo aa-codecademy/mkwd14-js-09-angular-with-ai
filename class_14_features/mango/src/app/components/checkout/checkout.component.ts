@@ -13,10 +13,13 @@ import type { CreateOrder } from '../../core/models/order.model';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../shared/services/notification.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TranslatePipe } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-checkout',
   imports: [
+    TranslatePipe,
     MatStepperModule,
     MatIconModule,
     MatButtonModule,
@@ -30,6 +33,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   styleUrl: './checkout.component.css',
 })
 export class CheckoutComponent {
+  private readonly translate = inject(TranslateService);
   private fb = inject(FormBuilder);
   cartService = inject(CartService);
   private orderService = inject(OrderService);
@@ -81,13 +85,13 @@ export class CheckoutComponent {
           console.log(order);
           // Clear the cart only after the server confirms - never optimistically before.
           this.cartService.clear();
-          this.notificationService.showSuccess('Order submitted successfully!');
+          this.notificationService.showSuccess(this.translate.instant('checkout.success'));
           this.router.navigate(['/orders']);
         },
         // Prefer the server's message when there is one, and fall back to something human-readable.
         error: (error) =>
           this.notificationService.showError(
-            error.error?.message || 'Issue while submitting the order.',
+            error.error?.message || this.translate.instant('checkout.error'),
           ),
       });
   }

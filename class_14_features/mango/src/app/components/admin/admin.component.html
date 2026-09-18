@@ -1,19 +1,24 @@
 <div class="container page-container">
   <div class="header-row">
-    <h1 class="page-title">Product Admin</h1>
+    <h1 class="page-title">{{ 'admin.productsTitle' | translate }}</h1>
     <div class="admin-header-actions">
-      <a mat-stroked-button routerLink="/admin/orders"><mat-icon>receipt_long</mat-icon> Orders</a>
+      <a mat-stroked-button routerLink="/admin/orders"
+        ><mat-icon>receipt_long</mat-icon> {{ 'admin.orders' | translate }}</a
+      >
       <a mat-flat-button color="primary" routerLink="/admin/products/new">
         <mat-icon>add</mat-icon>
-        New Product</a
+        {{ 'admin.newProduct' | translate }}</a
       >
     </div>
   </div>
 
   <div class="stat-row">
-    <span class="stat">10 products</span>
-    <span class="stat stat-warn">{{ store.lowStockCount() }} products are low in stock</span>
-    <span class="stat stat-danger">{{ store.outOfStockCount() }} products are out of stock</span>
+    <span class="stat stat-warn">{{
+      'admin.lowStock' | translate: { count: store.lowStockCount() }
+    }}</span>
+    <span class="stat stat-danger">
+      {{ 'admin.outOfStock' | translate: { count: store.outOfStockCount() } }}
+    </span>
   </div>
 
   <app-product-filters
@@ -31,20 +36,20 @@
 
   <table [dataSource]="store.products()" mat-table class="full-width-table">
     <ng-container matColumnDef="name">
-      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <th mat-header-cell *matHeaderCellDef>{{ 'admin.colName' | translate }}</th>
       <td mat-cell *matCellDef="let product">{{ product.name }}</td>
     </ng-container>
 
     <ng-container matColumnDef="price">
-      <th mat-header-cell *matHeaderCellDef>Price</th>
+      <th mat-header-cell *matHeaderCellDef>{{ 'admin.colPrice' | translate }}</th>
       <td mat-cell *matCellDef="let product">{{ product.price }}</td>
     </ng-container>
 
     <ng-container matColumnDef="stock">
-      <th mat-header-cell *matHeaderCellDef>Stock</th>
+      <th mat-header-cell *matHeaderCellDef>{{ 'admin.colStock' | translate }}</th>
       <td mat-cell *matCellDef="let product">
         @if (product.stock === 0) {
-          <span class="out-of-stock-badge">Out of stock</span>
+          <span class="out-of-stock-badge">{{ 'admin.outOfStockBadge' | translate }}</span>
         } @else {
           {{ product.stock }}
         }
