@@ -14,7 +14,7 @@
           <!-- [class.admin] toggles a single CSS class from a boolean - cleaner than building
              a class string by hand. Showing the role is cosmetic: the SERVER decides what an
              admin may actually do. -->
-        <span class="role-badge" [class.admin]="auth.isAdmin()">{{ user.role }}</span>
+          <span class="role-badge" [class.admin]="auth.isAdmin()">{{ user.role }}</span>
         </div>
       </div>
     </mat-card>
@@ -22,6 +22,9 @@
     <div class="account-actions">
       <a mat-flat-button color="primary" routerLink="/orders"
         ><mat-icon>receipt_long</mat-icon> My Orders</a
+      >
+      <a mat-stroked-button routerLink="/account/reset-password"
+        ><mat-icon>lock_reset</mat-icon> Reset password</a
       >
       <a mat-stroked-button routerLink="/products"> Continue Shopping</a>
       <button mat-flat-button color="warn" (click)="auth.logout()">

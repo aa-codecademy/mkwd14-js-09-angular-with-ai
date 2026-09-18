@@ -43,6 +43,14 @@ export const routes: Routes = [
       import('./components/account/account.component').then((m) => m.AccountComponent),
   },
   {
+    path: 'account/reset-password',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/reset-password/reset-password.component').then(
+        (m) => m.ResetPasswordComponent,
+      ),
+  },
+  {
     path: 'orders',
     canActivate: [authGuard],
     loadComponent: () =>

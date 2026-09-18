@@ -3,19 +3,23 @@ import type { Login, Register, User } from '../../core/models/auth.model';
 import { computed, inject } from '@angular/core';
 import { AuthService } from '../../shared/services/auth.service';
 import { withTokenStorage } from '../features/token-storage.feature';
-import { tap } from 'rxjs';
+import { catchError, of, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { jwtDecode } from 'jwt-decode';
 import type { TokenPayload } from '../../core/types/token-payload.type';
+import type { ResetPassword } from '../../core/types/auth-response.type';
+import { NotificationService } from '../../shared/services/notification.service';
 
 type AuthState = {
   // Only the user. The tokens are NOT declared here - withTokenStorage() already
   // contributes `accessToken` / `refreshToken` to the same store.
   user: User | null;
+  passwordError: string;
 };
 
 const initialState = {
   user: null,
+  passwordError: '',
 };
 
 export const AuthStore = signalStore(
@@ -45,36 +49,63 @@ export const AuthStore = signalStore(
 
   // Services are injected as default parameters - withMethods' factory is an injection
   // context; calling inject() inside the methods themselves would throw.
-  withMethods((store, authService = inject(AuthService), router = inject(Router)) => ({
-    login(body: Login) {
-      // RETURNS the observable instead of subscribing here. The store handles the state
-      // side effect (tap), the component decides what the UI does next (toast, navigate)
-      // and, importantly, gets to handle the error.
-      return authService.login(body).pipe(
-        tap((res) => {
-          store.setTokens(res.accessToken, res.refreshToken);
-          patchState(store, { user: res.user });
-        }),
-      );
-    },
-    register(body: Register) {
-      // Registering does NOT log you in - no tokens come back, so there is no state to
-      // change. The store just passes the call straight through.
-      return authService.register(body);
-    },
-    refresh() {
-      return authService
-        .refresh(store.refreshToken()!)
-        .pipe(tap((res) => store.setTokens(res.accessToken, res.refreshToken)));
-    },
-    logout() {
-      // Synchronous on purpose: logging out is a local action. Clear tokens, clear the
-      // user, then leave the page - in that order, so nothing renders with stale state.
-      store.clearTokens();
-      patchState(store, { user: null });
-      router.navigate(['/login']);
-    },
-  })),
+  withMethods(
+    (
+      store,
+      authService = inject(AuthService),
+      notificationService = inject(NotificationService),
+      router = inject(Router),
+    ) => ({
+      login(body: Login) {
+        // RETURNS the observable instead of subscribing here. The store handles the state
+        // side effect (tap), the component decides what the UI does next (toast, navigate)
+        // and, importantly, gets to handle the error.
+        return authService.login(body).pipe(
+          tap((res) => {
+            store.setTokens(res.accessToken, res.refreshToken);
+            patchState(store, { user: res.user });
+          }),
+        );
+      },
+      register(body: Register) {
+        // Registering does NOT log you in - no tokens come back, so there is no state to
+        // change. The store just passes the call straight through.
+        return authService.register(body);
+      },
+      refresh() {
+        return authService
+          .refresh(store.refreshToken()!)
+          .pipe(tap((res) => store.setTokens(res.accessToken, res.refreshToken)));
+      },
+      resetPassword(body: ResetPassword) {
+        return authService.resetPassword(body).pipe(
+          tap(() => {
+            notificationService.showSuccess('Password reset was successful. Please login again.');
+            this.logout();
+          }),
+          catchError((error) => {
+            if (error.error.status === 401) {
+              patchState(store, {
+                passwordError: 'Current password is incorrect',
+              });
+            } else {
+              patchState(store, {
+                passwordError: 'Issue while resetting your password',
+              });
+            }
+            return of(null);
+          }),
+        );
+      },
+      logout() {
+        // Synchronous on purpose: logging out is a local action. Clear tokens, clear the
+        // user, then leave the page - in that order, so nothing renders with stale state.
+        store.clearTokens();
+        patchState(store, { user: null });
+        router.navigate(['/login']);
+      },
+    }),
+  ),
 );
 
 // A plain helper function, deliberately outside the store: it takes input and returns

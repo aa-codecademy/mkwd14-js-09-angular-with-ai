@@ -18,3 +18,8 @@ export type RefreshResponse = {
   accessToken: string;
   refreshToken: string;
 };
+
+export type ResetPassword = {
+  currentPassword: string;
+  newPassword: string;
+};

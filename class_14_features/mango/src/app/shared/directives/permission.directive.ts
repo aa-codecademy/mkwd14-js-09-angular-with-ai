@@ -16,7 +16,7 @@ import { AuthStore } from '../../store/auth/auth.store';
 @Directive({
   selector: '[appPermission]',
 })
-export class PermissionDirective implements OnInit {
+export class PermissionDirective {
   // The input name must match the selector for the `*appPermission="..."` shorthand to bind.
   // Rename this to `appPermission` (or add `{ alias: 'appPermission' }`) if you want the star syntax.
   allowedRole = input.required<UserRole>({ alias: 'appPermission' });
@@ -27,7 +27,7 @@ export class PermissionDirective implements OnInit {
   // ViewContainerRef = the spot in the DOM where we're allowed to stamp that blueprint out.
   viewContainerRef = inject(ViewContainerRef);
 
-  ngOnInit() {
+  constructor() {
     // GOTCHA: effect() must run in an injection context - i.e. in a field initialiser or the
     // constructor. Called from ngOnInit like this it throws NG0203 unless you pass
     // `{ injector: inject(Injector) }`. Move this block into the constructor and it just works.
@@ -35,6 +35,7 @@ export class PermissionDirective implements OnInit {
       // Reading currentUser() inside the effect is what SUBSCRIBES us to it. Log out and this
       // whole function re-runs on its own - no manual subscription, no ngOnDestroy cleanup.
       const isAllowed = this.allowedRole() === this.authStore.currentUser()?.role;
+      console.log('🚀 ~ PermissionDirective ~ ngOnInit ~ isAllowed:', isAllowed);
 
       // Always clear first: the effect re-runs on every change, and without this you'd stamp
       // a second copy of the template next to the first one.

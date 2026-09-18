@@ -7,6 +7,7 @@ import type {
   LoginResponse,
   RefreshResponse,
   RegisterResponse,
+  ResetPassword,
 } from '../../core/types/auth-response.type';
 
 @Injectable({
@@ -33,5 +34,9 @@ export class AuthService {
 
   refresh(refreshToken: string): Observable<RefreshResponse> {
     return this.httpClient.post<RefreshResponse>(`${this.apiUrl}/auth/refresh`, { refreshToken });
+  }
+
+  resetPassword(body: ResetPassword): Observable<LoginResponse> {
+    return this.httpClient.post<LoginResponse>(`${this.apiUrl}/auth/change-password`, body);
   }
 }
