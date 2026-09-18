@@ -9,7 +9,7 @@ import { CartService } from '../../services/cart.service';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { LoadingService } from '../../services/loading.service';
 import { AuthStore } from '../../../store/auth/auth.store';
-import { PermissionDirective } from '../../directives/permisson.directive';
+import { PermissionDirective } from '../../directives/permission.directive';
 
 // Each MatXModule below unlocks one specific Material directive/component used in the template -
 // Angular Material is modular, so you only import what you actually use (toolbar, icon, button, badge).
@@ -25,8 +25,8 @@ import { PermissionDirective } from '../../directives/permisson.directive';
     RouterLink,
     RouterLinkActive,
     MatProgressBarModule,
-    PermissionDirective
-],
+    PermissionDirective,
+  ],
 })
 export class NavbarComponent {
   cartService = inject(CartService);

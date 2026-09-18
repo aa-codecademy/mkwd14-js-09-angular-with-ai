@@ -19,7 +19,7 @@ import { AuthStore } from '../../store/auth/auth.store';
 export class PermissionDirective implements OnInit {
   // The input name must match the selector for the `*appPermission="..."` shorthand to bind.
   // Rename this to `appPermission` (or add `{ alias: 'appPermission' }`) if you want the star syntax.
-  allowedRole = input.required<UserRole>();
+  allowedRole = input.required<UserRole>({ alias: 'appPermission' });
 
   authStore = inject(AuthStore);
   // TemplateRef = the chunk of markup we were wrapped around, as a blueprint - not yet rendered.

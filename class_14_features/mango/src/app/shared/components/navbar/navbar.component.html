@@ -18,11 +18,15 @@
       <a mat-button routerLink="/products" class="navbar-link" routerLinkActive="active-link">
         Products
       </a>
-      @if (store.isAdmin()) {
-        <a mat-button routerLink="/admin" class="navbar-link" routerLinkActive="active-link"
-          >Admin</a
-        >
-      }
+
+      <a
+        mat-button
+        *appPermission="'ADMIN'"
+        routerLink="/admin"
+        class="navbar-link"
+        routerLinkActive="active-link"
+        >Admin</a
+      >
     </nav>
 
     <!-- An empty span used purely for flexbox spacing (pushes the actions to the right) -->
