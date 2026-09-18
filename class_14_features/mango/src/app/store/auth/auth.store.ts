@@ -97,6 +97,9 @@ export const AuthStore = signalStore(
           }),
         );
       },
+      clearPasswordError() {
+        patchState(store, { passwordError: '' });
+      },
       logout() {
         // Synchronous on purpose: logging out is a local action. Clear tokens, clear the
         // user, then leave the page - in that order, so nothing renders with stale state.

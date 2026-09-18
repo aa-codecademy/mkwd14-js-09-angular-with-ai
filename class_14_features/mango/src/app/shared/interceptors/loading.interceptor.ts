@@ -5,7 +5,7 @@
 // that logic in each service/component.
 import type { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { LoadingService } from '../../shared/services/loading.service';
+import { LoadingService } from '../services/loading.service';
 import { finalize } from 'rxjs';
 
 // Gotcha: interceptor ORDER matters. Interceptors run in the array order given to

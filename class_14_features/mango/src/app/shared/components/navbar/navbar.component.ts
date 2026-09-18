@@ -4,12 +4,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { ProductService } from '../../services/product.service';
 import { CartService } from '../../services/cart.service';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { LoadingService } from '../../services/loading.service';
 import { AuthStore } from '../../../store/auth/auth.store';
 import { PermissionDirective } from '../../directives/permission.directive';
+import { LanguageService } from '../../services/language.service';
+import { UpperCasePipe } from '@angular/common';
+import { MatMenuModule } from '@angular/material/menu';
+import { TranslatePipe } from '@ngx-translate/core';
 
 // Each MatXModule below unlocks one specific Material directive/component used in the template -
 // Angular Material is modular, so you only import what you actually use (toolbar, icon, button, badge).
@@ -26,11 +29,15 @@ import { PermissionDirective } from '../../directives/permission.directive';
     RouterLinkActive,
     MatProgressBarModule,
     PermissionDirective,
+    UpperCasePipe,
+    MatMenuModule,
+    TranslatePipe,
   ],
 })
 export class NavbarComponent {
   cartService = inject(CartService);
   loadingService = inject(LoadingService);
+  languageService = inject(LanguageService);
   // Public (no `private`) because the TEMPLATE reads it. A private field is invisible
   // to the template and Angular's compiler will error on `store.isLoggedIn()`.
   store = inject(AuthStore);

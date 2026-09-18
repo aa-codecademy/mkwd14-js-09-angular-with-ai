@@ -7,6 +7,12 @@ import { catchError, switchMap, throwError } from 'rxjs';
 // tells a reader nothing.
 const AUTH_STATUS_NOT_AUTH = 401;
 const REFRESH_ENDPOINT = '/auth/refresh';
+const CREDENTIAL_ENDPOINTS = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/auth/change-password',
+];
 
 // Exported separately so it can be unit tested without spinning up HttpClient. Pick<> means
 // "any object with a url" - the test doesn't have to build a whole HttpRequest.
@@ -29,6 +35,10 @@ export const refreshTokenInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     // catchError only sees FAILED responses. A 401 here means "your access token expired".
     catchError((err: HttpErrorResponse) => {
+      if (CREDENTIAL_ENDPOINTS.some((path) => req.url.includes(path))) {
+        return throwError(() => err);
+      }
+
       // Anything that isn't a 401 (404, 500, a network drop) is not our problem, and without
       // a refresh token there is nothing we could do anyway - rethrow so the caller handles it.
       // throwError(() => err) takes a FACTORY, not the error itself - a common RxJS 7 gotcha.

@@ -3,7 +3,7 @@
     <!-- Brand: icon + wordmark act as one link back to home. -->
     <a routerLink="/" class="navbar-brand">
       <mat-icon class="navbar-brand-icon">spa</mat-icon>
-      <span class="navbar-brand-text">Mango</span>
+      <span class="navbar-brand-text">{{ 'nav.title' | translate }}</span>
     </a>
 
     <nav class="navbar-nav">
@@ -13,10 +13,10 @@
         class="navbar-link"
         routerLinkActive="active-link"
         [routerLinkActiveOptions]="{ exact: true }"
-        >Home</a
+        >{{ 'nav.home' | translate }}</a
       >
       <a mat-button routerLink="/products" class="navbar-link" routerLinkActive="active-link">
-        Products
+        {{ 'nav.products' | translate }}
       </a>
 
       <a
@@ -47,6 +47,16 @@
       >
         <mat-icon>shopping_cart</mat-icon>
       </a>
+      <button mat-button [matMenuTriggerFor]="languageMenu">
+        <mat-icon>language</mat-icon> {{ languageService.currentLang() | uppercase }}
+      </button>
+      <mat-menu #languageMenu="matMenu">
+        @for (lang of languageService.available; track lang) {
+          <button mat-menu-item (click)="languageService.use(lang)">
+            {{ lang | uppercase }}
+          </button>
+        }
+      </mat-menu>
       <!-- isLoggedIn is a computed SIGNAL, so call it with (). It re-evaluates by itself -->
       <!-- the moment a token is set or cleared, and this block swaps without any manual work. -->
       @if (store.isLoggedIn()) {
